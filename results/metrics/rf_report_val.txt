@@ -1,0 +1,15 @@
+Classification Report — Random Forest
+==================================================
+Note: Recall for Attack class = True Positive Rate.
+Missing attacks (False Negatives) are critical in SOC triage;
+maximise Attack Recall to minimise missed threats.
+==================================================
+
+              precision    recall  f1-score   support
+
+  Normal (0)       0.96      0.97      0.97       585
+  Attack (1)       0.99      0.99      0.99      1578
+
+    accuracy                           0.98      2163
+   macro avg       0.97      0.98      0.98      2163
+weighted avg       0.98      0.98      0.98      2163

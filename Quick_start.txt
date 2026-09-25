@@ -1,0 +1,6 @@
+# Train models and generate all results (~10 seconds)
+python train_and_evaluate.py
+
+# Launch interactive SOC dashboard
+python dashboard.py
+# → opens at http://127.0.0.1:8050

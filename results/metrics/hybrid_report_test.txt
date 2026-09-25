@@ -1,0 +1,15 @@
+Classification Report — Hybrid Model
+==================================================
+Note: Recall for Attack class = True Positive Rate.
+Missing attacks (False Negatives) are critical in SOC triage;
+maximise Attack Recall to minimise missed threats.
+==================================================
+
+              precision    recall  f1-score   support
+
+  Normal (0)       0.90      0.97      0.93       618
+  Attack (1)       0.99      0.98      0.99      2989
+
+    accuracy                           0.98      3607
+   macro avg       0.95      0.97      0.96      3607
+weighted avg       0.98      0.98      0.98      3607

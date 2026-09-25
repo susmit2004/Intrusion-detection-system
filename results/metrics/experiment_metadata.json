@@ -1,0 +1,108 @@
+{
+  "dataset_version": "Primary_training_data.xlsx / Primary_testing_data.xlsx",
+  "dataset_note": "Testbed traffic captured from an authorized cybersecurity lab. Pre-split train/test files provided; a time-ordered validation split is carved from the training set inside this pipeline.",
+  "random_seed": 42,
+  "feature_list": [
+    "proto_ICMP",
+    "proto_TCP",
+    "proto_UDP",
+    "iface_ens192",
+    "iface_eth0",
+    "src_port_clean",
+    "dest_port_clean",
+    "has_ports",
+    "is_well_known_port",
+    "is_ephemeral_src_port",
+    "flow_pkts_toserver",
+    "flow_pkts_toclient",
+    "total_packets",
+    "flow_bytes_toserver",
+    "flow_bytes_toclient",
+    "total_bytes",
+    "bytes_per_packet",
+    "avg_bytes_toserver_per_pkt",
+    "pkt_asymmetry_ratio",
+    "hour_of_day",
+    "day_of_week",
+    "is_weekend"
+  ],
+  "n_features": 22,
+  "split_method": "time-based: last 15% of training rows = validation",
+  "n_train": 12262,
+  "n_val": 2163,
+  "n_test": 3607,
+  "lr_params": {
+    "C": 1.0,
+    "max_iter": 1000,
+    "solver": "lbfgs",
+    "class_weight": "balanced",
+    "random_state": 42
+  },
+  "rf_params": {
+    "n_estimators": 300,
+    "max_depth": null,
+    "min_samples_leaf": 2,
+    "class_weight": "balanced",
+    "random_state": 42,
+    "n_jobs": -1
+  },
+  "calibration_method": "isotonic",
+  "hybrid_w1_lr": 0.3,
+  "hybrid_w2_rf": 0.7,
+  "decision_threshold": 0.502462311557789,
+  "low_triage_threshold": 0.24989588057021758,
+  "high_triage_threshold": 0.9862662337662337,
+  "val_evaluation_summary": [
+    {
+      "Model": "Logistic Regression",
+      "Accuracy": 0.9186,
+      "Precision": 0.9743,
+      "Recall": 0.9125,
+      "F1": 0.9424,
+      "ROC_AUC": 0.9743
+    },
+    {
+      "Model": "Random Forest",
+      "Accuracy": 0.981,
+      "Precision": 0.9886,
+      "Recall": 0.9854,
+      "F1": 0.987,
+      "ROC_AUC": 0.9976
+    },
+    {
+      "Model": "Hybrid",
+      "Accuracy": 0.9921,
+      "Precision": 0.9987,
+      "Recall": 0.9905,
+      "F1": 0.9946,
+      "ROC_AUC": 0.9995
+    }
+  ],
+  "test_evaluation_summary": [
+    {
+      "Model": "Logistic Regression",
+      "Accuracy": 0.8672,
+      "Precision": 0.9838,
+      "Recall": 0.8538,
+      "F1": 0.9142,
+      "ROC_AUC": 0.9569
+    },
+    {
+      "Model": "Random Forest",
+      "Accuracy": 0.9792,
+      "Precision": 0.9919,
+      "Recall": 0.9829,
+      "F1": 0.9874,
+      "ROC_AUC": 0.9977
+    },
+    {
+      "Model": "Hybrid",
+      "Accuracy": 0.9759,
+      "Precision": 0.9929,
+      "Recall": 0.9779,
+      "F1": 0.9853,
+      "ROC_AUC": 0.9843
+    }
+  ],
+  "runtime_seconds": 11.2
+}

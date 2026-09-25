@@ -1,0 +1,15 @@
+Classification Report — Logistic Regression
+==================================================
+Note: Recall for Attack class = True Positive Rate.
+Missing attacks (False Negatives) are critical in SOC triage;
+maximise Attack Recall to minimise missed threats.
+==================================================
+
+              precision    recall  f1-score   support
+
+  Normal (0)       0.57      0.93      0.71       618
+  Attack (1)       0.98      0.85      0.91      2989
+
+    accuracy                           0.87      3607
+   macro avg       0.78      0.89      0.81      3607
+weighted avg       0.91      0.87      0.88      3607
