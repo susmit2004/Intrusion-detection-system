@@ -1,0 +1,12 @@
+=== Hybrid Model [Val] ===
+              precision    recall  f1-score   support
+
+  Normal (0)     1.0000    0.9992    0.9996      8485
+  Attack (1)     0.9965    1.0000    0.9983      2015
+
+    accuracy                         0.9993     10500
+   macro avg     0.9983    0.9996    0.9989     10500
+weighted avg     0.9993    0.9993    0.9993     10500
+
+ROC-AUC: 1.0000
+TP=2015  TN=8478  FP=7  FN=0

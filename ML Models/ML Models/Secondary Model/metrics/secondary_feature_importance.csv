@@ -1,0 +1,13 @@
+feature,importance
+bytes_per_packet,0.1616305270564874
+Destination Port,0.1523350359169998
+total_bytes,0.12397973851788263
+day_of_week,0.11377325443748997
+Total Length of Bwd Packets,0.11106180666950229
+Total Length of Fwd Packets,0.0927768720854919
+Source Port,0.08570849507969439
+Total Backward Packets,0.04384155619602336
+hour_of_day,0.035296372492236126
+Total Fwd Packets,0.02988959474435541
+packet_asymmetry_ratio,0.025067142050770243
+total_packets,0.024639604753066556

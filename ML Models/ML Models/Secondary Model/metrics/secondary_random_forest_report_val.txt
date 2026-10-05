@@ -1,0 +1,12 @@
+=== Random Forest [Val] ===
+              precision    recall  f1-score   support
+
+  Normal (0)     0.9998    0.9994    0.9996      8485
+  Attack (1)     0.9975    0.9990    0.9983      2015
+
+    accuracy                         0.9993     10500
+   macro avg     0.9986    0.9992    0.9989     10500
+weighted avg     0.9993    0.9993    0.9993     10500
+
+ROC-AUC: 1.0000
+TP=2013  TN=8480  FP=5  FN=2

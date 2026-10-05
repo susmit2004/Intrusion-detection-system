@@ -1,0 +1,12 @@
+=== Logistic Regression [Val] ===
+              precision    recall  f1-score   support
+
+  Normal (0)     0.8766    0.9926    0.9310      8485
+  Attack (1)     0.9294    0.4114    0.5703      2015
+
+    accuracy                         0.8810     10500
+   macro avg     0.9030    0.7020    0.7507     10500
+weighted avg     0.8867    0.8810    0.8618     10500
+
+ROC-AUC: 0.9001
+TP=829  TN=8422  FP=63  FN=1186

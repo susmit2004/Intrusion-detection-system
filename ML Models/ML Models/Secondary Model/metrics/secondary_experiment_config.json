@@ -1,0 +1,185 @@
+{
+  "dataset_train": "D:\\Intrusion-detection-system\\Raw Data\\Secondary data\\Secondary_Train_70.csv",
+  "dataset_test": "D:\\Intrusion-detection-system\\Raw Data\\Secondary data\\Secondary_Test_30.csv",
+  "random_seed": 42,
+  "feature_list": [
+    "Source Port",
+    "Destination Port",
+    "Total Fwd Packets",
+    "Total Backward Packets",
+    "Total Length of Fwd Packets",
+    "Total Length of Bwd Packets",
+    "total_packets",
+    "total_bytes",
+    "bytes_per_packet",
+    "packet_asymmetry_ratio",
+    "hour_of_day",
+    "day_of_week"
+  ],
+  "n_features": 12,
+  "split_method": "StratifiedShuffleSplit val_frac=0.15 from training data only",
+  "n_train": 59500,
+  "n_val": 10500,
+  "n_test": 30000,
+  "lr_params": {
+    "C": 1.0,
+    "max_iter": 1000,
+    "solver": "lbfgs",
+    "class_weight": "balanced",
+    "random_state": 42
+  },
+  "rf_params": {
+    "n_estimators": 300,
+    "max_depth": null,
+    "min_samples_leaf": 2,
+    "class_weight": "balanced",
+    "random_state": 42,
+    "n_jobs": -1
+  },
+  "calibration_method": "isotonic",
+  "note_raw_vs_calibrated": "lr_prob_raw / rf_prob_raw = direct predict_proba() output from base models. lr_prob_calibrated / rf_prob_calibrated = output of CalibratedClassifierCV (method=isotonic) fitted on validation set. Hybrid score uses calibrated probabilities.",
+  "hybrid_w1_lr": 0.1,
+  "hybrid_w2_rf": 0.9,
+  "decision_threshold": 0.2723,
+  "low_triage_threshold": 0.05,
+  "high_triage_threshold": 0.9381,
+  "weight_search_results": [
+    {
+      "w1_lr": 0.1,
+      "w2_rf": 0.9,
+      "f1": 0.9977673033986604,
+      "recall": 0.998014888337469
+    },
+    {
+      "w1_lr": 0.2,
+      "w2_rf": 0.8,
+      "f1": 0.9977673033986604,
+      "recall": 0.998014888337469
+    },
+    {
+      "w1_lr": 0.3,
+      "w2_rf": 0.7,
+      "f1": 0.997020854021847,
+      "recall": 0.9965260545905708
+    },
+    {
+      "w1_lr": 0.4,
+      "w2_rf": 0.6,
+      "f1": 0.9967733929014644,
+      "recall": 0.9965260545905708
+    },
+    {
+      "w1_lr": 0.5,
+      "w2_rf": 0.5,
+      "f1": 0.9920159680638723,
+      "recall": 0.9866004962779157
+    },
+    {
+      "w1_lr": 0.6,
+      "w2_rf": 0.4,
+      "f1": 0.8768851110501782,
+      "recall": 0.7935483870967742
+    },
+    {
+      "w1_lr": 0.7,
+      "w2_rf": 0.3,
+      "f1": 0.8595956798670729,
+      "recall": 0.7702233250620347
+    },
+    {
+      "w1_lr": 0.8,
+      "w2_rf": 0.2,
+      "f1": 0.8320135746606335,
+      "recall": 0.7300248138957817
+    },
+    {
+      "w1_lr": 0.9,
+      "w2_rf": 0.1,
+      "f1": 0.5758513931888545,
+      "recall": 0.4153846153846154
+    }
+  ],
+  "val_evaluation_summary": [
+    {
+      "model": "Logistic Regression",
+      "split": "Val",
+      "accuracy": 0.881,
+      "precision": 0.9294,
+      "recall": 0.4114,
+      "f1": 0.5703,
+      "roc_auc": 0.9001,
+      "TP": 829,
+      "TN": 8422,
+      "FP": 63,
+      "FN": 1186
+    },
+    {
+      "model": "Random Forest",
+      "split": "Val",
+      "accuracy": 0.9993,
+      "precision": 0.9975,
+      "recall": 0.999,
+      "f1": 0.9983,
+      "roc_auc": 1.0,
+      "TP": 2013,
+      "TN": 8480,
+      "FP": 5,
+      "FN": 2
+    },
+    {
+      "model": "Hybrid Model",
+      "split": "Val",
+      "accuracy": 0.9993,
+      "precision": 0.9965,
+      "recall": 1.0,
+      "f1": 0.9983,
+      "roc_auc": 1.0,
+      "TP": 2015,
+      "TN": 8478,
+      "FP": 7,
+      "FN": 0
+    }
+  ],
+  "test_evaluation_summary": [
+    {
+      "model": "Logistic Regression",
+      "split": "Test",
+      "accuracy": 0.8759,
+      "precision": 0.927,
+      "recall": 0.4031,
+      "f1": 0.5618,
+      "roc_auc": 0.8977,
+      "TP": 2387,
+      "TN": 23890,
+      "FP": 188,
+      "FN": 3535
+    },
+    {
+      "model": "Random Forest",
+      "split": "Test",
+      "accuracy": 0.9973,
+      "precision": 0.9951,
+      "recall": 0.9912,
+      "f1": 0.9931,
+      "roc_auc": 0.9998,
+      "TP": 5870,
+      "TN": 24049,
+      "FP": 29,
+      "FN": 52
+    },
+    {
+      "model": "Hybrid Model",
+      "split": "Test",
+      "accuracy": 0.9972,
+      "precision": 0.9927,
+      "recall": 0.9931,
+      "f1": 0.9929,
+      "roc_auc": 0.9996,
+      "TP": 5881,
+      "TN": 24035,
+      "FP": 43,
+      "FN": 41
+    }
+  ],
+  "runtime_seconds": 10.6
+}

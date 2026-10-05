@@ -1,0 +1,4 @@
+model,split,accuracy,precision,recall,f1,roc_auc,TP,TN,FP,FN
+Logistic Regression,Val,0.881,0.9294,0.4114,0.5703,0.9001,829,8422,63,1186
+Random Forest,Val,0.9993,0.9975,0.999,0.9983,1.0,2013,8480,5,2
+Hybrid Model,Val,0.9993,0.9965,1.0,0.9983,1.0,2015,8478,7,0

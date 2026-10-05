@@ -1,0 +1,12 @@
+=== Random Forest [Test] ===
+              precision    recall  f1-score   support
+
+  Normal (0)     0.9978    0.9988    0.9983     24078
+  Attack (1)     0.9951    0.9912    0.9931      5922
+
+    accuracy                         0.9973     30000
+   macro avg     0.9965    0.9950    0.9957     30000
+weighted avg     0.9973    0.9973    0.9973     30000
+
+ROC-AUC: 0.9998
+TP=5870  TN=24049  FP=29  FN=52
