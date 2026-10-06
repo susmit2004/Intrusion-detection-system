@@ -27,7 +27,7 @@ DATASET_NOTE = (
 # Paths
 # ---------------------------------------------------------------------------
 BASE_DIR        = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_DIR        = os.path.join(BASE_DIR, "Raw Data")
+DATA_DIR        = os.path.join(BASE_DIR, "Raw Data", "Primary data")
 TRAIN_PATH      = os.path.join(DATA_DIR, "Primary_training_data.xlsx")
 TEST_PATH       = os.path.join(DATA_DIR, "Primary_testing_data.xlsx")
 RESULTS_DIR     = os.path.join(BASE_DIR, "results")

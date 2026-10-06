@@ -37,6 +37,10 @@ import os
 import sys
 import json
 import textwrap
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -70,7 +74,7 @@ os.makedirs(COMPARE_DIR, exist_ok=True)
 # ─────────────────────────────────────────────────────────────────────────────
 C_PRI  = "#3498db"   # primary dataset colour
 C_SEC  = "#e67e22"   # secondary dataset colour
-C_GOOD = "#2ecc71"
+C_GOOD = "#2ecc71"  
 C_WARN = "#f39c12"
 C_BAD  = "#e74c3c"
 C_BG   = "#1a1a2e"

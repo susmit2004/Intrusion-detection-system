@@ -1,0 +1,235 @@
+Failed to find real location of C:\Users\SUSMIT\AppData\Local\Python\pythoncore-3.14-64\python.exe
+
+======================================================================
+  CORRECTED SECONDARY EXPERIMENT | retrospective re-evaluation
+======================================================================
+
+======================================================================
+  STEP 1-2 | Load datasets and build binary target
+======================================================================
+
+  Train shape : (70000, 13)
+  Test  shape : (30000, 13)
+
+  Columns     : ['Source Port', 'Destination Port', 'Total Fwd Packets', 'Total Backward Packets', 'Total Length of Fwd Packets', 'Total Length of Bwd Packets', 'total_packets', 'total_bytes', 'bytes_per_packet', 'packet_asymmetry_ratio', 'hour_of_day', 'day_of_week', 'Label']
+
+  Training class distribution (multiclass):
+    [NORMAL]    BENIGN                                56567  (80.8%)
+    [ATTACK]    DoS Hulk                               5511  (7.9%)
+    [ATTACK]    PortScan                               3920  (5.6%)
+    [ATTACK]    DDoS                                   3032  (4.3%)
+    [ATTACK]    DoS GoldenEye                           236  (0.3%)
+    [ATTACK]    FTP-Patator                             195  (0.3%)
+    [ATTACK]    SSH-Patator                             166  (0.2%)
+    [ATTACK]    DoS Slowhttptest                        135  (0.2%)
+    [ATTACK]    DoS slowloris                           134  (0.2%)
+    [ATTACK]    Web Attack – Brute Force                 43  (0.1%)
+    [ATTACK]    Bot                                      36  (0.1%)
+    [ATTACK]    Web Attack – XSS                         24  (0.0%)
+    [ATTACK]    Infiltration                              1  (0.0%)
+
+  Training binary distribution:
+    NORMAL:  56567  (80.8%)
+    ATTACK:  13433  (19.2%)
+
+  Test class distribution (multiclass):
+    [NORMAL]    BENIGN                                24078  (80.3%)
+    [ATTACK]    DoS Hulk                               2337  (7.8%)
+    [ATTACK]    PortScan                               1718  (5.7%)
+    [ATTACK]    DDoS                                   1459  (4.9%)
+    [ATTACK]    DoS GoldenEye                           104  (0.3%)
+    [ATTACK]    FTP-Patator                              85  (0.3%)
+    [ATTACK]    DoS slowloris                            60  (0.2%)
+    [ATTACK]    SSH-Patator                              59  (0.2%)
+    [ATTACK]    DoS Slowhttptest                         47  (0.2%)
+    [ATTACK]    Bot                                      24  (0.1%)
+    [ATTACK]    Web Attack – Brute Force                 19  (0.1%)
+    [ATTACK]    Web Attack – XSS                          9  (0.0%)
+    [ATTACK]    Web Attack – Sql Injection                1  (0.0%)
+
+  Test binary distribution:
+    NORMAL:  24078  (80.3%)
+    ATTACK:   5922  (19.7%)
+
+  Missing values — train: 0, test: 0
+  Infinite values — train: 0, test: 0
+    Saved: D:\Intrusion-detection-system\results\verified\secondary\plots\secondary_class_distribution.png
+
+======================================================================
+  STEP 3 | Feature-group-separated training / calibration / tuning
+======================================================================
+  train: 49053 rows, attack rate 0.1917
+  calibration: 10443 rows, attack rate 0.1926
+  tuning: 10504 rows, attack rate 0.1920
+
+======================================================================
+  STEP 4-5 | Train LR/RF; calibrate frozen models on calibration subset
+======================================================================
+
+  → Training Logistic Regression (with StandardScaler pipeline) …
+    LR pipeline trained.
+
+  → Training Random Forest (no scaling) …
+    RF model trained.
+
+  → Calibrating frozen LR on calibration subset (isotonic) …
+    LR calibrated.
+
+  → Calibrating frozen RF on calibration subset (isotonic) …
+    RF calibrated.
+
+  Models saved to: D:\Intrusion-detection-system\results\verified\secondary\models
+
+  → Computing probabilities [Tuning] …
+    LR raw prob  — mean: 0.3689  std: 0.2920
+    LR cal score — mean: 0.1939  std: 0.2606
+    RF raw prob  — mean: 0.1933  std: 0.3905
+    RF cal score — mean: 0.1922  std: 0.3931
+
+  → Computing probabilities [Test] …
+    LR raw prob  — mean: 0.3701  std: 0.2938
+    LR cal score — mean: 0.1951  std: 0.2629
+    RF raw prob  — mean: 0.1985  std: 0.3948
+    RF cal score — mean: 0.1974  std: 0.3972
+
+======================================================================
+  STEP 10-12 | Evaluation on Val set
+======================================================================
+
+=== Logistic Regression [Val] ===
+              precision    recall  f1-score   support
+
+  Normal (0)     0.9361    0.8412    0.8861      8487
+  Attack (1)     0.5316    0.7586    0.6251      2017
+
+    accuracy                         0.8253     10504
+   macro avg     0.7339    0.7999    0.7556     10504
+weighted avg     0.8585    0.8253    0.8360     10504
+
+  ROC-AUC : 0.8843
+  TP=1530  TN=7139  FP=1348  FN=487  ← FN = missed attacks
+    Saved: D:\Intrusion-detection-system\results\verified\secondary\plots\secondary_cm_logistic_regression_val.png
+
+=== Random Forest [Val] ===
+              precision    recall  f1-score   support
+
+  Normal (0)     0.9994    0.9989    0.9992      8487
+  Attack (1)     0.9955    0.9975    0.9965      2017
+
+    accuracy                         0.9987     10504
+   macro avg     0.9975    0.9982    0.9979     10504
+weighted avg     0.9987    0.9987    0.9987     10504
+
+  ROC-AUC : 0.9996
+  TP=2012  TN=8478  FP=9  FN=5  ← FN = missed attacks
+    Saved: D:\Intrusion-detection-system\results\verified\secondary\plots\secondary_cm_random_forest_val.png
+
+=== Hybrid Model [Val] ===
+              precision    recall  f1-score   support
+
+  Normal (0)     0.9994    0.9989    0.9992      8487
+  Attack (1)     0.9955    0.9975    0.9965      2017
+
+    accuracy                         0.9987     10504
+   macro avg     0.9975    0.9982    0.9979     10504
+weighted avg     0.9987    0.9987    0.9987     10504
+
+  ROC-AUC : 0.9996
+  TP=2012  TN=8478  FP=9  FN=5  ← FN = missed attacks
+    Saved: D:\Intrusion-detection-system\results\verified\secondary\plots\secondary_cm_hybrid_model_val.png
+    Saved: D:\Intrusion-detection-system\results\verified\secondary\plots\secondary_roc_comparison_val.png
+    Saved: D:\Intrusion-detection-system\results\verified\secondary\plots\secondary_reliability_val.png
+    Saved: D:\Intrusion-detection-system\results\verified\secondary\plots\secondary_triage_distribution_val.png
+
+======================================================================
+  STEP 10-12 | Evaluation on Test set
+======================================================================
+
+=== Logistic Regression [Test] ===
+              precision    recall  f1-score   support
+
+  Normal (0)     0.9369    0.8458    0.8891     24078
+  Attack (1)     0.5508    0.7685    0.6417      5922
+
+    accuracy                         0.8306     30000
+   macro avg     0.7438    0.8072    0.7654     30000
+weighted avg     0.8607    0.8306    0.8402     30000
+
+  ROC-AUC : 0.8938
+  TP=4551  TN=20366  FP=3712  FN=1371  ← FN = missed attacks
+    Saved: D:\Intrusion-detection-system\results\verified\secondary\plots\secondary_cm_logistic_regression_test.png
+
+=== Random Forest [Test] ===
+              precision    recall  f1-score   support
+
+  Normal (0)     0.9992    0.9991    0.9991     24078
+  Attack (1)     0.9963    0.9966    0.9965      5922
+
+    accuracy                         0.9986     30000
+   macro avg     0.9977    0.9979    0.9978     30000
+weighted avg     0.9986    0.9986    0.9986     30000
+
+  ROC-AUC : 0.9995
+  TP=5902  TN=24056  FP=22  FN=20  ← FN = missed attacks
+    Saved: D:\Intrusion-detection-system\results\verified\secondary\plots\secondary_cm_random_forest_test.png
+
+=== Hybrid Model [Test] ===
+              precision    recall  f1-score   support
+
+  Normal (0)     0.9992    0.9991    0.9991     24078
+  Attack (1)     0.9963    0.9966    0.9965      5922
+
+    accuracy                         0.9986     30000
+   macro avg     0.9977    0.9979    0.9978     30000
+weighted avg     0.9986    0.9986    0.9986     30000
+
+  ROC-AUC : 0.9995
+  TP=5902  TN=24056  FP=22  FN=20  ← FN = missed attacks
+    Saved: D:\Intrusion-detection-system\results\verified\secondary\plots\secondary_cm_hybrid_model_test.png
+    Saved: D:\Intrusion-detection-system\results\verified\secondary\plots\secondary_roc_comparison_test.png
+    Saved: D:\Intrusion-detection-system\results\verified\secondary\plots\secondary_reliability_test.png
+    Saved: D:\Intrusion-detection-system\results\verified\secondary\plots\secondary_triage_distribution_test.png
+
+======================================================================
+  STEP 13 | Random Forest Feature Importance
+======================================================================
+
+  Feature Importances:
+    Destination Port                          0.1655  █████████████████████████████████
+    bytes_per_packet                          0.1577  ███████████████████████████████
+    Total Length of Bwd Packets               0.1178  ███████████████████████
+    total_bytes                               0.1144  ██████████████████████
+    day_of_week                               0.1141  ██████████████████████
+    Total Length of Fwd Packets               0.0852  █████████████████
+    Source Port                               0.0852  █████████████████
+    Total Backward Packets                    0.0469  █████████
+    hour_of_day                               0.0349  ██████
+    total_packets                             0.0278  █████
+    Total Fwd Packets                         0.0267  █████
+    packet_asymmetry_ratio                    0.0239  ████
+    Saved: D:\Intrusion-detection-system\results\verified\secondary\plots\secondary_feature_importance.png
+
+======================================================================
+  STEP 14 | Normal vs Attack Traffic Feature Comparison
+======================================================================
+
+  Feature Stats (Normal vs Attack):
+  Feature                                     NormMean     AtkMean     Ratio
+  Source Port                                 39953.04    46831.70      1.17x
+  Destination Port                             9279.80     2523.77      0.27x
+  Total Fwd Packets                              27.49        4.05      0.15x
+  Total Backward Packets                         35.39        3.29      0.09x
+  Total Length of Fwd Packets                   690.69      172.79      0.25x
+  Total Length of Bwd Packets                 68966.12     5186.67      0.08x
+  total_packets                                  62.88        7.34      0.12x
+  total_bytes                                 69656.80     5359.46      0.08x
+  bytes_per_packet                              116.40      478.13      4.11x
+  packet_asymmetry_ratio                          1.50        1.56      1.04x
+  hour_of_day                                     6.25        6.26      1.00x
+  day_of_week                                     1.91        3.02      1.58x
+    Saved: D:\Intrusion-detection-system\results\verified\secondary\plots\secondary_feature_distribution_comparison.png
+              model split     n  accuracy  precision   recall       f1  roc_auc  average_precision  brier_score  log_loss   TP    TN   FP   FN  false_positive_rate  false_negative_rate
+Logistic Regression  Test 30000  0.830567   0.550768 0.768490 0.641664 0.893786           0.682424     0.088913  0.291561 4551 20366 3712 1371             0.154166             0.231510
+      Random Forest  Test 30000  0.998600   0.996286 0.996623 0.996454 0.999520           0.998971     0.001222  0.011703 5902 24056   22   20             0.000914             0.003377
+       Hybrid Model  Test 30000  0.998600   0.996286 0.996623 0.996454 0.999520           0.998971     0.001222  0.011703 5902 24056   22   20             0.000914             0.003377
+Corrected artifacts: D:\Intrusion-detection-system\results\verified\secondary

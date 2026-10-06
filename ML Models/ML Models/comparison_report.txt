@@ -15,9 +15,9 @@
   Characteristic                      Primary               Secondary             
   ────────────────────────────────────────────────────────────────────────────────
   Source                              Testbed / Suricata IDSCIC-IDS-2017 (CICIDS) 
-  Total rows                          18,032                100,000               
-  Train rows                          12,262                59,500                
-  Validation rows                     2,163                 10,500                
+  Total rows                          18,032                89,557                
+  Train rows                          12,262                49,053                
+  Validation rows                     2,163                 10,504                
   Test rows                           3,607                 30,000                
   Attack rate (test set)              82.9%                 19.7%                 
   Number of features                  22                    12                    
@@ -47,11 +47,11 @@
   RF — min_samples_leaf               2                     2                     
   RF — class_weight                   balanced              balanced              
   Calibration method                  isotonic              isotonic              
-  Hybrid weight w_LR                  0.30                  0.10                  
-  Hybrid weight w_RF                  0.70                  0.90                  
-  Decision threshold                  0.5025                0.2723                
-  Low triage threshold                0.2499                0.0500                
-  High triage threshold               0.9863                0.9381                
+  Hybrid weight w_LR                  0.30                  0.00                  
+  Hybrid weight w_RF                  0.70                  1.00                  
+  Decision threshold                  0.5025                0.4536                
+  Low triage threshold                0.2499                0.0000                
+  High triage threshold               0.9863                1.0000                
 
   Observation:
     Both models used identical hyperparameters and calibration methods.
@@ -70,7 +70,7 @@
   Dataset           Accuracy  Precision Recall    F1        ROC-AUC   FN      
   ────────────────────────────────────────────────────────────────────────────
   Primary           0.8672    0.9838    0.8538    0.9142    0.9569    437     
-  Secondary         0.8759    0.9270    0.4031    0.5618    0.8977    3535    
+  Secondary         0.8306    0.5508    0.7685    0.6417    0.8938    1371    
 
   Observation:
     LR achieved very different recall across datasets.
@@ -92,7 +92,7 @@
   Dataset           Accuracy  Precision Recall    F1        ROC-AUC   FN      
   ────────────────────────────────────────────────────────────────────────────
   Primary           0.9792    0.9919    0.9829    0.9874    0.9977    51      
-  Secondary         0.9973    0.9951    0.9912    0.9931    0.9998    52      
+  Secondary         0.9986    0.9963    0.9966    0.9965    0.9995    20      
 
   Observation:
     Random Forest delivered strong performance on both datasets, confirming
@@ -114,7 +114,7 @@
   Dataset           Accuracy  Precision Recall    F1        ROC-AUC   FN      
   ────────────────────────────────────────────────────────────────────────────
   Primary           0.9759    0.9929    0.9779    0.9853    0.9843    66      
-  Secondary         0.9972    0.9927    0.9931    0.9929    0.9996    41      
+  Secondary         0.9986    0.9963    0.9966    0.9965    0.9995    20      
 
   Observation:
     The Hybrid model outperformed or matched standalone models on both
@@ -139,25 +139,25 @@
   Primary     Logistic Regression     0.8672    0.9838    0.8538    0.9142    0.9569    42    437   
   Primary     Random Forest           0.9792    0.9919    0.9829    0.9874    0.9977    24    51    
   Primary     Hybrid Model            0.9759    0.9929    0.9779    0.9853    0.9843    21    66    
-  Secondary   Logistic Regression     0.8759    0.9270    0.4031    0.5618    0.8977    188   3535  
-  Secondary   Random Forest           0.9973    0.9951    0.9912    0.9931    0.9998    29    52    
-  Secondary   Hybrid Model            0.9972    0.9927    0.9931    0.9929    0.9996    43    41    
+  Secondary   Logistic Regression     0.8306    0.5508    0.7685    0.6417    0.8938    3712  1371  
+  Secondary   Random Forest           0.9986    0.9963    0.9966    0.9965    0.9995    22    20    
+  Secondary   Hybrid Model            0.9986    0.9963    0.9966    0.9965    0.9995    22    20    
 
 ──────────────────────────────────────────────────────────────────────────────
   7. Top-10 Random Forest Feature Importance Comparison
 ──────────────────────────────────────────────────────────────────────────────
   Rank Primary Feature                   ImportanceSecondary Feature                 Importance
   ─────────────────────────────────────────────────────────────────────────────────────────────
-  1    total_bytes                       0.1388    bytes_per_packet                  0.1616    
-  2    bytes_per_packet                  0.1346    Destination Port                  0.1523    
-  3    proto_TCP                         0.1169    total_bytes                       0.1240    
-  4    dest_port_clean                   0.1129    day_of_week                       0.1138    
-  5    flow_bytes_toserver               0.0967    Total Length of Bwd Packets       0.1111    
-  6    flow_bytes_toclient               0.0955    Total Length of Fwd Packets       0.0928    
-  7    avg_bytes_toserver_per_pkt        0.0723    Source Port                       0.0857    
-  8    total_packets                     0.0595    Total Backward Packets            0.0438    
-  9    proto_UDP                         0.0466    hour_of_day                       0.0353    
-  10   src_port_clean                    0.0336    Total Fwd Packets                 0.0299    
+  1    total_bytes                       0.1388    Destination Port                  0.1655    
+  2    bytes_per_packet                  0.1346    bytes_per_packet                  0.1577    
+  3    proto_TCP                         0.1169    Total Length of Bwd Packets       0.1178    
+  4    dest_port_clean                   0.1129    total_bytes                       0.1144    
+  5    flow_bytes_toserver               0.0967    day_of_week                       0.1141    
+  6    flow_bytes_toclient               0.0955    Total Length of Fwd Packets       0.0852    
+  7    avg_bytes_toserver_per_pkt        0.0723    Source Port                       0.0852    
+  8    total_packets                     0.0595    Total Backward Packets            0.0469    
+  9    proto_UDP                         0.0466    hour_of_day                       0.0349    
+  10   src_port_clean                    0.0336    total_packets                     0.0278    
 
   Observation:
     Both datasets independently rank bytes_per_packet and volume-related
@@ -181,16 +181,16 @@
 ──────────────────────────────────────────────────────────────────────────────
   Triage Level          Primary (n) Primary % Secondary (n)Secondary %
   ──────────────────────────────────────────────────────────────────
-  Low Suspicion         563         15.6%     23572       78.6%     
-  Medium / Review       1905        52.8%     3847        12.8%     
-  High Suspicion        1139        31.6%     2581        8.6%      
+  Low Suspicion         563         15.6%     0           0.0%      
+  Medium / Review       1905        52.8%     24721       82.4%     
+  High Suspicion        1139        31.6%     5279        17.6%     
   Total                 3607        100%      30000       100%      
 
   Configuration:
     Primary  — Low < 0.2499 |
                High >= 0.9863
-    Secondary — Low < 0.0500 |
-               High >= 0.9381
+    Secondary — Low < 0.0000 |
+               High >= 1.0000
 
   Observation:
     The Primary test set is attack-dominated (~83% attack rate), so most
@@ -217,9 +217,9 @@
     Hybrid : FN=  66  Recall=0.9779
 
   Secondary Dataset (test n=30,000, attack rate=19.7%):
-    LR     : FN=3535  Recall=0.4031
-    RF     : FN=  52  Recall=0.9912
-    Hybrid : FN=  41  Recall=0.9931
+    LR     : FN=1371  Recall=0.7685
+    RF     : FN=  20  Recall=0.9966
+    Hybrid : FN=  20  Recall=0.9966
 
   Key findings:
     • Logistic Regression is unsuitable as a standalone detector on raw

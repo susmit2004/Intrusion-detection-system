@@ -9,16 +9,16 @@ Pipeline steps
  1.  Load and inspect Secondary_Train_70.csv and Secondary_Test_30.csv
  2.  Build binary target (BENIGN=0, attack=1); retain multiclass labels
  3.  Define feature columns (no leakage — Label excluded)
- 4.  Carve validation set from training data only (stratified, 15 %)
+ 4.  Split training-file feature groups into training/calibration/tuning (~70/15/15)
  5.  Train Logistic Regression (with StandardScaler pipeline)
  6.  Train Random Forest (no scaling)
- 7.  Probability calibration (isotonic) on validation set
+ 7.  Freeze fitted base models; calibrate on the separate calibration subset
  8.  Distinguish raw probabilities from calibrated confidence scores
  9.  Tune hybrid weights on validation set (grid search over F1)
 10.  Select optimal decision threshold on validation set
 11.  Determine SOC triage bands from validation distribution
 12.  Evaluate LR, RF, Hybrid on validation set (diagnostic)
-13.  Evaluate LR, RF, Hybrid on TEST set (final — never used before)
+13.  Retrospectively evaluate the supplied test file, including an unseen-feature subset
 14.  Analyse Random Forest feature importance
 15.  Compare feature distributions: normal vs attack traffic
 16.  Save all artefacts (models, predictions, metrics, plots, config JSON)
@@ -29,7 +29,7 @@ Usage
 
 Outputs
 -------
-    ML Models/ML Models/Secondary Model/
+    results/verified/secondary/ (override with IDS_SECONDARY_RESULTS_DIR)
         models/
             secondary_lr_pipeline.joblib
             secondary_lr_calibrated.joblib
@@ -65,8 +65,11 @@ import json
 import os
 import sys
 import time
-import warnings
-warnings.filterwarnings("ignore")
+import platform
+
+# Force UTF-8 output so Unicode arrows don't crash cp1252 on Windows
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 import numpy as np
 import pandas as pd
@@ -82,6 +85,9 @@ from sklearn.ensemble        import RandomForestClassifier
 from sklearn.preprocessing   import StandardScaler
 from sklearn.pipeline        import Pipeline
 from sklearn.calibration     import CalibratedClassifierCV
+from sklearn.calibration     import calibration_curve
+from sklearn.frozen          import FrozenEstimator
+import sklearn
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.metrics         import (
     accuracy_score, precision_score, recall_score, f1_score,
@@ -100,18 +106,23 @@ np.random.seed(RANDOM_SEED)
 # ============================================================
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR     = os.path.dirname(os.path.dirname(os.path.dirname(SCRIPT_DIR)))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+from experiment_support import (
+    feature_groups, grouped_development_split, metric_record,
+    select_f1_threshold, sha256_file, triage_summary,
+)
 DATA_DIR     = os.path.join(BASE_DIR, "Raw Data", "Secondary data")
 TRAIN_PATH   = os.path.join(DATA_DIR, "Secondary_Train_70.csv")
 TEST_PATH    = os.path.join(DATA_DIR, "Secondary_Test_30.csv")
 
-OUT_ROOT     = SCRIPT_DIR
+OUT_ROOT     = os.path.abspath(os.environ.get(
+    "IDS_SECONDARY_RESULTS_DIR", SCRIPT_DIR   # default: same folder as the script
+))
 MODEL_DIR    = os.path.join(OUT_ROOT, "models")
 PRED_DIR     = os.path.join(OUT_ROOT, "predictions")
 METRICS_DIR  = os.path.join(OUT_ROOT, "metrics")
 PLOTS_DIR    = os.path.join(OUT_ROOT, "plots")
-
-for d in [MODEL_DIR, PRED_DIR, METRICS_DIR, PLOTS_DIR]:
-    os.makedirs(d, exist_ok=True)
 
 # ============================================================
 # Feature & target configuration
@@ -126,8 +137,8 @@ BENIGN_CLASS = "BENIGN"
 FEATURE_COLS = [
     "Source Port",                   # source TCP/UDP port
     "Destination Port",              # destination TCP/UDP port
-    "Total Fwd Packets",             # forward (client→server) packet count
-    "Total Backward Packets",        # backward (server→client) packet count
+    "Total Fwd Packets",             # forward (client-->server) packet count
+    "Total Backward Packets",        # backward (server-->client) packet count
     "Total Length of Fwd Packets",   # total bytes in forward direction
     "Total Length of Bwd Packets",   # total bytes in backward direction
     "total_packets",                 # sum of fwd + bwd packets
@@ -164,7 +175,7 @@ RF_PARAMS = {
 }
 
 # Hybrid weight search grid (w_lr; w_rf = 1 - w_lr)
-LR_WEIGHT_CANDIDATES = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+LR_WEIGHT_CANDIDATES = [i / 10 for i in range(11)]
 
 # SOC triage level labels
 TRIAGE_LOW    = "Low Suspicion"
@@ -182,7 +193,7 @@ def banner(msg):
 
 
 def sub(msg):
-    print(f"\n  → {msg}")
+    print(f"\n  --> {msg}")
 
 
 def _save_fig(name):
@@ -204,6 +215,17 @@ def load_data():
     print(f"\n  Train shape : {train_raw.shape}")
     print(f"  Test  shape : {test_raw.shape}")
     print(f"\n  Columns     : {list(train_raw.columns)}")
+
+    # Validate before constructing labels; missing labels must not become attacks.
+    for name, frame in [("development", train_raw), ("test", test_raw)]:
+        if frame[LABEL_COL].isna().any():
+            raise ValueError(f"Missing {name} labels")
+        frame[LABEL_COL] = frame[LABEL_COL].astype(str).str.strip()
+        if frame[LABEL_COL].eq("").any() or not frame[LABEL_COL].eq(BENIGN_CLASS).any():
+            raise ValueError(f"Invalid {name} labels or missing expected BENIGN label")
+        if not np.isfinite(frame[FEATURE_COLS].to_numpy(dtype=float)).all():
+            raise ValueError(f"Non-finite or missing {name} features")
+        frame["row_index"] = np.arange(len(frame))
 
     # ---- binary target ----
     train_raw["label_binary"]     = (train_raw[LABEL_COL] != BENIGN_CLASS).astype(int)
@@ -278,33 +300,20 @@ def _plot_class_distribution(train_df, test_df):
 # STEP 3 — Train / Validation split (from training data only)
 # ============================================================
 def split_train_val(train_raw):
-    banner("STEP 3 | Stratified train/validation split (from training data only)")
-
-    X_full = train_raw[FEATURE_COLS].values
-    y_full = train_raw["label_binary"].values
-
-    sss = StratifiedShuffleSplit(n_splits=1, test_size=VAL_FRAC, random_state=RANDOM_SEED)
-    train_idx, val_idx = next(sss.split(X_full, y_full))
-
-    X_train, y_train = X_full[train_idx], y_full[train_idx]
-    X_val,   y_val   = X_full[val_idx],   y_full[val_idx]
-
-    meta_train = train_raw.iloc[train_idx][["label_multiclass", "label_binary"]].reset_index(drop=True)
-    meta_val   = train_raw.iloc[val_idx][["label_multiclass",   "label_binary"]].reset_index(drop=True)
-
-    print(f"\n  Train  : {X_train.shape[0]:>6d} rows  "
-          f"(attack rate: {y_train.mean()*100:.1f}%)")
-    print(f"  Val    : {X_val.shape[0]:>6d} rows  "
-          f"(attack rate: {y_val.mean()*100:.1f}%)")
-
-    return X_train, y_train, X_val, y_val, meta_train, meta_val
+    """Return independent development subsets, grouping identical feature vectors."""
+    banner("STEP 3 | Feature-group-separated training / calibration / tuning")
+    indices = grouped_development_split(train_raw[FEATURE_COLS], train_raw.label_binary, RANDOM_SEED)
+    subsets = {name: train_raw.iloc[index].copy() for name, index in indices.items()}
+    for name, subset in subsets.items():
+        print(f"  {name}: {len(subset)} rows, attack rate {subset.label_binary.mean():.4f}")
+    return subsets
 
 
 # ============================================================
 # STEP 4 & 5 — Train LR and RF, then calibrate on val set
 # ============================================================
-def train_models(X_train, y_train, X_val, y_val):
-    banner("STEP 4-5 | Train Logistic Regression + Random Forest → Calibrate on validation")
+def train_models(X_train, y_train, X_cal, y_cal):
+    banner("STEP 4-5 | Train LR/RF; calibrate frozen models on calibration subset")
 
     # ---- Logistic Regression with StandardScaler pipeline ----
     sub("Training Logistic Regression (with StandardScaler pipeline) …")
@@ -321,22 +330,20 @@ def train_models(X_train, y_train, X_val, y_val):
     rf_model.fit(X_train, y_train)
     print("    RF model trained.")
 
-    # ---- Calibrate both models on validation set ----
-    # cv=None tells CalibratedClassifierCV that the base estimator is already
-    # fitted; it will use the supplied X_val / y_val directly for calibration.
-    # (sklearn >= 1.2 removed the legacy cv="prefit" string alias.)
-    sub("Calibrating LR on validation set (isotonic) …")
+    # FrozenEstimator preserves models fitted on training data. Calibration and
+    # threshold tuning use separate records and separate feature groups.
+    sub("Calibrating frozen LR on calibration subset (isotonic) …")
     lr_calibrated = CalibratedClassifierCV(
-        estimator=lr_pipeline, method=CALIBRATION_METHOD, cv=None
+        estimator=FrozenEstimator(lr_pipeline), method=CALIBRATION_METHOD
     )
-    lr_calibrated.fit(X_val, y_val)
+    lr_calibrated.fit(X_cal, y_cal)
     print("    LR calibrated.")
 
-    sub("Calibrating RF on validation set (isotonic) …")
+    sub("Calibrating frozen RF on calibration subset (isotonic) …")
     rf_calibrated = CalibratedClassifierCV(
-        estimator=rf_model, method=CALIBRATION_METHOD, cv=None
+        estimator=FrozenEstimator(rf_model), method=CALIBRATION_METHOD
     )
-    rf_calibrated.fit(X_val, y_val)
+    rf_calibrated.fit(X_cal, y_cal)
     print("    RF calibrated.")
 
     # ---- Save models ----
@@ -395,84 +402,30 @@ def get_probabilities(models, X, split_name=""):
 # STEP 7-8-9 — Hybrid tuning on validation set
 # ============================================================
 def tune_hybrid(lr_prob_cal, rf_prob_cal, y_val):
-    """
-    Grid-search over LR weight candidates to find the combination that
-    maximises F1 on the validation set.
-    Threshold search done on the same validation set.
-    Triage band boundaries set from validation score distribution.
-
-    All decisions are made on validation data only.
-    The test set is never touched here.
-    """
-    banner("STEP 7-9 | Hybrid weight + threshold + triage band tuning (validation only)")
-
-    best_f1  = -1.0
-    best_w1  = 0.5
-    results  = []
-
-    for w1 in LR_WEIGHT_CANDIDATES:
-        w2 = round(1.0 - w1, 2)
-        hybrid = w1 * lr_prob_cal + w2 * rf_prob_cal
-        pred   = (hybrid >= 0.5).astype(int)
-        f1     = f1_score(y_val, pred, zero_division=0)
-        rec    = recall_score(y_val, pred, zero_division=0)
-        results.append({"w1_lr": w1, "w2_rf": w2, "f1": f1, "recall": rec})
-        if f1 > best_f1:
-            best_f1 = f1
-            best_w1 = w1
-
-    best_w2 = round(1.0 - best_w1, 2)
-    print(f"\n  Hybrid weight search results:")
-    print(f"  {'w1_LR':>6}  {'w2_RF':>6}  {'F1':>8}  {'Recall':>8}")
-    for r in results:
-        marker = " ◄ best" if r["w1_lr"] == best_w1 else ""
-        print(f"  {r['w1_lr']:>6.2f}  {r['w2_rf']:>6.2f}  "
-              f"{r['f1']:>8.4f}  {r['recall']:>8.4f}{marker}")
-
-    print(f"\n  Best weights: w_LR={best_w1:.2f}, w_RF={best_w2:.2f}  (F1={best_f1:.4f})")
-
-    # Compute hybrid score with best weights
-    hybrid_val = best_w1 * lr_prob_cal + best_w2 * rf_prob_cal
-
-    # ---- Threshold optimisation on validation set ----
-    sub("Searching optimal decision threshold on validation set …")
-    thresholds  = np.linspace(0.01, 0.99, 199)
-    best_thr    = 0.5
-    best_thr_f1 = -1.0
-    thr_records = []
-    for thr in thresholds:
-        pred = (hybrid_val >= thr).astype(int)
-        f1   = f1_score(y_val, pred, zero_division=0)
-        rec  = recall_score(y_val, pred, zero_division=0)
-        pre  = precision_score(y_val, pred, zero_division=0)
-        thr_records.append({"threshold": thr, "f1": f1, "recall": rec, "precision": pre})
-        if f1 > best_thr_f1:
-            best_thr_f1 = f1
-            best_thr    = thr
-
-    best_thr = float(round(best_thr, 4))
-    print(f"  Optimal threshold (max F1 on val): {best_thr:.4f}  (F1={best_thr_f1:.4f})")
-
-    # ---- Triage band thresholds from validation distribution ----
-    sub("Setting SOC triage bands from validation hybrid score distribution …")
-    low_thr  = float(np.percentile(hybrid_val[y_val == 0], 90))
-    high_thr = float(np.percentile(hybrid_val[y_val == 1], 30))
-    low_thr  = round(max(0.05, min(low_thr,  best_thr - 0.05)), 4)
-    high_thr = round(max(best_thr + 0.05, min(high_thr, 0.95)), 4)
-
-    print(f"  Triage band boundaries:")
-    print(f"    Low Suspicion  : hybrid_score < {low_thr}")
-    print(f"    Medium / Review: {low_thr} ≤ hybrid_score < {high_thr}")
-    print(f"    High Suspicion : hybrid_score ≥ {high_thr}")
-
-    return {
-        "w1_lr":              best_w1,
-        "w2_rf":              best_w2,
-        "decision_threshold": best_thr,
-        "low_triage_threshold":  low_thr,
-        "high_triage_threshold": high_thr,
-        "weight_search_results": results,
-    }
+    """Joint weight/threshold search on tuning only, including single-model endpoints."""
+    results = []
+    for weight in LR_WEIGHT_CANDIDATES:
+        scores = weight * lr_prob_cal + (1 - weight) * rf_prob_cal
+        selected = select_f1_threshold(scores, y_val)
+        results.append({"w1_lr": weight, "w2_rf": 1 - weight,
+                        "f1": selected["f1"], "threshold": selected["threshold"],
+                        "recall": float(recall_score(y_val, scores >= selected["threshold"]))})
+    # Deterministic ties prefer lower LR weight; no artificial hybrid advantage.
+    best = max(results, key=lambda row: (round(row["f1"], 12), -row["w1_lr"]))
+    scores = best["w1_lr"] * lr_prob_cal + best["w2_rf"] * rf_prob_cal
+    threshold = best["threshold"]
+    low = max(0.0, min(float(np.percentile(scores[y_val == 0], 90)), threshold))
+    high = min(1.0, max(float(np.percentile(scores[y_val == 1], 30)), threshold))
+    if low >= high:
+        low, high = max(0.0, threshold - 0.05), min(1.0, threshold + 0.05)
+    return {"w1_lr": best["w1_lr"], "w2_rf": best["w2_rf"],
+            "decision_threshold": threshold,
+            "low_triage_threshold": low, "high_triage_threshold": high,
+            "weight_search_results": results,
+            "lr_threshold": select_f1_threshold(lr_prob_cal, y_val)["threshold"],
+            "rf_threshold": select_f1_threshold(rf_prob_cal, y_val)["threshold"],
+            "triage_method": "Heuristic normal p90 / attack p30 on tuning, bounded by decision threshold; no risk guarantee",
+            "hybrid_probability_note": "Weighted calibrated base probabilities; the blend is not independently calibrated."}
 
 
 def compute_hybrid_score(lr_prob, rf_prob, w1, w2):
@@ -498,38 +451,17 @@ def _classification_report_str(y_true, y_pred, name):
     return (
         f"=== {name} ===\n" +
         classification_report(y_true, y_pred,
-                              target_names=["Normal (0)", "Attack (1)"],
+                              labels=[0, 1], target_names=["Normal (0)", "Attack (1)"],
                               digits=4, zero_division=0)
     )
 
 
 def _compute_metrics(y_true, y_pred, y_prob, model_name, split):
-    acc  = accuracy_score(y_true, y_pred)
-    pre  = precision_score(y_true, y_pred, zero_division=0)
-    rec  = recall_score(y_true, y_pred, zero_division=0)
-    f1   = f1_score(y_true, y_pred, zero_division=0)
-    try:
-        auc = roc_auc_score(y_true, y_prob)
-    except Exception:
-        auc = float("nan")
-    tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
-    return {
-        "model":       model_name,
-        "split":       split,
-        "accuracy":    round(acc, 4),
-        "precision":   round(pre, 4),
-        "recall":      round(rec, 4),
-        "f1":          round(f1, 4),
-        "roc_auc":     round(auc, 4),
-        "TP":          int(tp),
-        "TN":          int(tn),
-        "FP":          int(fp),
-        "FN":          int(fn),
-    }
+    return metric_record(y_true, y_pred, y_prob, model_name, split)
 
 
 def _plot_confusion_matrix(y_true, y_pred, model_name, split):
-    cm = confusion_matrix(y_true, y_pred)
+    cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
     fig, ax = plt.subplots(figsize=(5, 4))
     sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax,
                 xticklabels=["Normal", "Attack"],
@@ -582,13 +514,13 @@ def evaluate_all(y_true, probs, lr_pred, rf_pred, hybrid_pred,
         print(f"  ROC-AUC : {metrics['roc_auc']:.4f}")
         print(f"  TP={metrics['TP']}  TN={metrics['TN']}  "
               f"FP={metrics['FP']}  FN={metrics['FN']}  "
-              f"← FN = missed attacks")
+              f"<-- FN = missed attacks")
 
         # Save text report
         tag = name.lower().replace(" ", "_")
         report_path = os.path.join(METRICS_DIR,
                                    f"secondary_{tag}_report_{split.lower()}.txt")
-        with open(report_path, "w") as f:
+        with open(report_path, "w", encoding="utf-8") as f:
             f.write(rep)
             f.write(f"\nROC-AUC: {metrics['roc_auc']:.4f}\n")
             f.write(f"TP={metrics['TP']}  TN={metrics['TN']}  "
@@ -724,29 +656,23 @@ def analyse_traffic_patterns(X_train, y_train, feature_names, top_n=8):
 # ============================================================
 def save_predictions(meta_df, probs, hybrid_score_raw, hybrid_score_cal,
                      hybrid_pred, triage_levels, split):
-    df_out = pd.DataFrame({
-        "label_multiclass":      meta_df["label_multiclass"].values,
-        "label_binary":          meta_df["label_binary"].values,
-        "lr_prob_raw":           np.round(probs["lr_prob_raw"], 6),
-        "lr_prob_calibrated":    np.round(probs["lr_prob_cal"], 6),
-        "lr_pred":               probs["lr_pred"],
-        "rf_prob_raw":           np.round(probs["rf_prob_raw"], 6),
-        "rf_prob_calibrated":    np.round(probs["rf_prob_cal"], 6),
-        "rf_pred":               probs["rf_pred"],
-        "hybrid_score_raw":      np.round(hybrid_score_raw, 6),
-        "hybrid_score_calibrated": np.round(hybrid_score_cal, 6),
-        "hybrid_pred":           hybrid_pred,
-        "triage_level":          triage_levels,
-    })
+    df_out = meta_df[["row_index", "label_multiclass", "label_binary"]].reset_index(drop=True).copy()
+    for key, source in [("lr_prob_raw", "lr_prob_raw"), ("lr_prob_calibrated", "lr_prob_cal"),
+                        ("rf_prob_raw", "rf_prob_raw"), ("rf_prob_calibrated", "rf_prob_cal"),
+                        ("lr_pred", "lr_pred"), ("rf_pred", "rf_pred")]:
+        df_out[key] = probs[source]
+    df_out["lr_pred_raw"] = (probs["lr_prob_raw"] >= 0.5).astype(int)
+    df_out["rf_pred_raw"] = (probs["rf_prob_raw"] >= 0.5).astype(int)
+    df_out["hybrid_score_raw"] = hybrid_score_raw
+    df_out["hybrid_score_calibrated"] = hybrid_score_cal
+    df_out["hybrid_pred"] = hybrid_pred
+    df_out["triage_level"] = triage_levels
     path = os.path.join(PRED_DIR, f"secondary_predictions_{split.lower()}.csv")
     df_out.to_csv(path, index=False)
-    print(f"\n  Predictions saved: {path}  ({len(df_out)} rows)")
+    triage_summary(df_out).to_csv(os.path.join(METRICS_DIR, f"secondary_triage_{split.lower()}.csv"), index=False)
     return df_out
 
 
-# ============================================================
-# STEP 16 — Triage distribution plot
-# ============================================================
 def plot_triage_distribution(triage_levels, y_true, split):
     levels_order = [TRIAGE_LOW, TRIAGE_REVIEW, TRIAGE_HIGH]
     colours = {"Low Suspicion": "#2ecc71",
@@ -792,216 +718,111 @@ def plot_triage_distribution(triage_levels, y_true, split):
 # ============================================================
 # STEP 17 — Save experiment config JSON
 # ============================================================
-def save_config(hybrid_cfg, feature_names, n_train, n_val, n_test,
-                val_summary, test_summary, elapsed):
-    config = {
-        "dataset_train":      TRAIN_PATH,
-        "dataset_test":       TEST_PATH,
-        "random_seed":        RANDOM_SEED,
-        "feature_list":       feature_names,
-        "n_features":         len(feature_names),
-        "split_method":       f"StratifiedShuffleSplit val_frac={VAL_FRAC} from training data only",
-        "n_train":            int(n_train),
-        "n_val":              int(n_val),
-        "n_test":             int(n_test),
-        "lr_params":          LR_PARAMS,
-        "rf_params":          RF_PARAMS,
-        "calibration_method": CALIBRATION_METHOD,
-        "note_raw_vs_calibrated": (
-            "lr_prob_raw / rf_prob_raw = direct predict_proba() output from base models. "
-            "lr_prob_calibrated / rf_prob_calibrated = output of CalibratedClassifierCV "
-            f"(method={CALIBRATION_METHOD}) fitted on validation set. "
-            "Hybrid score uses calibrated probabilities."
-        ),
-        "hybrid_w1_lr":              float(hybrid_cfg["w1_lr"]),
-        "hybrid_w2_rf":              float(hybrid_cfg["w2_rf"]),
-        "decision_threshold":        float(hybrid_cfg["decision_threshold"]),
-        "low_triage_threshold":      float(hybrid_cfg["low_triage_threshold"]),
-        "high_triage_threshold":     float(hybrid_cfg["high_triage_threshold"]),
-        "weight_search_results":     hybrid_cfg["weight_search_results"],
-        "val_evaluation_summary":    val_summary.to_dict(orient="records"),
-        "test_evaluation_summary":   test_summary.to_dict(orient="records"),
-        "runtime_seconds":           elapsed,
-    }
-    path = os.path.join(METRICS_DIR, "secondary_experiment_config.json")
-    with open(path, "w") as f:
-        json.dump(config, f, indent=2)
-    print(f"\n  Experiment config saved: {path}")
-    return config
+def detailed_diagnostics(labels, probs, summary, split):
+    rows = summary.to_dict(orient="records")
+    for tag in ["lr", "rf"]:
+        for kind, key in [("raw", f"{tag}_prob_raw"), ("calibrated", f"{tag}_prob_cal")]:
+            rows.append(metric_record(labels, probs[key] >= 0.5, probs[key],
+                                      f"{tag.upper()} {kind} @0.5", split))
+    pd.DataFrame(rows).to_csv(os.path.join(METRICS_DIR, f"secondary_detailed_metrics_{split.lower()}.csv"), index=False)
+    fig, ax = plt.subplots(figsize=(6, 5))
+    for label, key in [("LR raw", "lr_prob_raw"), ("LR calibrated", "lr_prob_cal"),
+                       ("RF raw", "rf_prob_raw"), ("RF calibrated", "rf_prob_cal")]:
+        observed, predicted = calibration_curve(labels, probs[key], n_bins=10, strategy="uniform")
+        ax.plot(predicted, observed, marker="o", label=label)
+    ax.plot([0, 1], [0, 1], "--", color="gray")
+    ax.set(xlabel="Predicted attack probability", ylabel="Observed attack fraction",
+           title=f"Secondary reliability ({split})")
+    ax.legend(fontsize=8)
+    fig.tight_layout()
+    _save_fig(f"secondary_reliability_{split.lower()}.png")
 
 
-# ============================================================
-# MAIN ORCHESTRATION
-# ============================================================
 def main():
     run_start = time.time()
-
-    banner("Confidence-Based Hybrid ML Framework — SECONDARY DATASET PIPELINE")
-    print(f"  Script : {__file__}")
-    print(f"  Train  : {TRAIN_PATH}")
-    print(f"  Test   : {TEST_PATH}")
-    print(f"  Output : {OUT_ROOT}")
-
-    # ----------------------------------------------------------
-    # 1-2: Load data, build targets
-    # ----------------------------------------------------------
+    for directory in [MODEL_DIR, PRED_DIR, METRICS_DIR, PLOTS_DIR]:
+        os.makedirs(directory, exist_ok=True)
+    banner("CORRECTED SECONDARY EXPERIMENT | retrospective re-evaluation")
     train_raw, test_raw = load_data()
-
-    # ----------------------------------------------------------
-    # 3: Train / Val split (training data only)
-    # ----------------------------------------------------------
-    X_train, y_train, X_val, y_val, meta_train, meta_val = split_train_val(train_raw)
-
-    # Prepare test features and metadata (NEVER touched until final eval)
-    X_test  = test_raw[FEATURE_COLS].values
-    y_test  = test_raw["label_binary"].values
-    meta_test = test_raw[["label_multiclass", "label_binary"]].reset_index(drop=True)
-    print(f"\n  Test   : {X_test.shape[0]:>6d} rows  "
-          f"(attack rate: {y_test.mean()*100:.1f}%)")
-
-    # ----------------------------------------------------------
-    # 4-5: Train models + calibrate on val set
-    # ----------------------------------------------------------
-    models = train_models(X_train, y_train, X_val, y_val)
-
-    # ----------------------------------------------------------
-    # 6: Get probabilities for validation set
-    # ----------------------------------------------------------
-    val_probs = get_probabilities(models, X_val, split_name="Validation")
-
-    # ----------------------------------------------------------
-    # 7-9: Hybrid tuning (validation only)
-    # ----------------------------------------------------------
-    hybrid_cfg = tune_hybrid(
-        lr_prob_cal=val_probs["lr_prob_cal"],
-        rf_prob_cal=val_probs["rf_prob_cal"],
-        y_val=y_val,
-    )
-    w1       = hybrid_cfg["w1_lr"]
-    w2       = hybrid_cfg["w2_rf"]
-    dec_thr  = hybrid_cfg["decision_threshold"]
-    low_thr  = hybrid_cfg["low_triage_threshold"]
-    high_thr = hybrid_cfg["high_triage_threshold"]
-
-    # ----------------------------------------------------------
-    # Hybrid scores for VALIDATION (using calibrated probs)
-    # ----------------------------------------------------------
-    hybrid_val_raw  = compute_hybrid_score(val_probs["lr_prob_raw"], val_probs["rf_prob_raw"], w1, w2)
-    hybrid_val_cal  = compute_hybrid_score(val_probs["lr_prob_cal"], val_probs["rf_prob_cal"], w1, w2)
-    hybrid_val_pred = (hybrid_val_cal >= dec_thr).astype(int)
-    triage_val      = apply_triage(hybrid_val_cal, low_thr, high_thr)
-
-    # ----------------------------------------------------------
-    # 10-12: Evaluate on VALIDATION set (diagnostic)
-    # ----------------------------------------------------------
-    val_summary = evaluate_all(
-        y_true=y_val,
-        probs=val_probs,
-        lr_pred=val_probs["lr_pred"],
-        rf_pred=val_probs["rf_pred"],
-        hybrid_pred=hybrid_val_pred,
-        hybrid_cal_score=hybrid_val_cal,
-        low_thr=low_thr,
-        high_thr=high_thr,
-        split="Val",
-    )
-    val_summary.to_csv(
-        os.path.join(METRICS_DIR, "secondary_evaluation_summary_val.csv"), index=False
-    )
-
-    # Save validation predictions
-    save_predictions(
-        meta_df=meta_val,
-        probs=val_probs,
-        hybrid_score_raw=hybrid_val_raw,
-        hybrid_score_cal=hybrid_val_cal,
-        hybrid_pred=hybrid_val_pred,
-        triage_levels=triage_val,
-        split="val",
-    )
-    plot_triage_distribution(triage_val, y_val, split="Val")
-
-    # ----------------------------------------------------------
-    # FINAL: Get probabilities for TEST set (first time touching it)
-    # ----------------------------------------------------------
-    banner("FINAL EVALUATION | Test set — completely unseen until now")
-    test_probs = get_probabilities(models, X_test, split_name="Test")
-
-    hybrid_test_raw  = compute_hybrid_score(test_probs["lr_prob_raw"], test_probs["rf_prob_raw"], w1, w2)
-    hybrid_test_cal  = compute_hybrid_score(test_probs["lr_prob_cal"], test_probs["rf_prob_cal"], w1, w2)
-    hybrid_test_pred = (hybrid_test_cal >= dec_thr).astype(int)
-    triage_test      = apply_triage(hybrid_test_cal, low_thr, high_thr)
-
-    test_summary = evaluate_all(
-        y_true=y_test,
-        probs=test_probs,
-        lr_pred=test_probs["lr_pred"],
-        rf_pred=test_probs["rf_pred"],
-        hybrid_pred=hybrid_test_pred,
-        hybrid_cal_score=hybrid_test_cal,
-        low_thr=low_thr,
-        high_thr=high_thr,
-        split="Test",
-    )
-    test_summary.to_csv(
-        os.path.join(METRICS_DIR, "secondary_evaluation_summary_test.csv"), index=False
-    )
-
-    # Save test predictions
-    save_predictions(
-        meta_df=meta_test,
-        probs=test_probs,
-        hybrid_score_raw=hybrid_test_raw,
-        hybrid_score_cal=hybrid_test_cal,
-        hybrid_pred=hybrid_test_pred,
-        triage_levels=triage_test,
-        split="test",
-    )
-    plot_triage_distribution(triage_test, y_test, split="Test")
-
-    # ----------------------------------------------------------
-    # Feature importance + traffic patterns
-    # ----------------------------------------------------------
-    df_imp    = analyse_feature_importance(models["rf_model"], FEATURE_COLS)
-    df_stats  = analyse_traffic_patterns(X_train, y_train, FEATURE_COLS, top_n=8)
-
-    # ----------------------------------------------------------
-    # Save config JSON (includes all actual results)
-    # ----------------------------------------------------------
-    elapsed = round(time.time() - run_start, 1)
-    save_config(
-        hybrid_cfg=hybrid_cfg,
-        feature_names=FEATURE_COLS,
-        n_train=len(y_train),
-        n_val=len(y_val),
-        n_test=len(y_test),
-        val_summary=val_summary,
-        test_summary=test_summary,
-        elapsed=elapsed,
-    )
-
-    # ----------------------------------------------------------
-    # Final summary
-    # ----------------------------------------------------------
-    banner("PIPELINE COMPLETE")
-    print(f"\n  Runtime : {elapsed:.1f} s")
-    print(f"\n  {'Model':<22s}  {'Split':<5}  "
-          f"{'Accuracy':>8}  {'Precision':>9}  {'Recall':>7}  {'F1':>7}  {'AUC':>7}  {'FN':>5}")
-    print("  " + "-" * 80)
-    for df in [val_summary, test_summary]:
-        for _, row in df.iterrows():
-            print(f"  {row['model']:<22s}  {row['split']:<5}  "
-                  f"{row['accuracy']:>8.4f}  {row['precision']:>9.4f}  "
-                  f"{row['recall']:>7.4f}  {row['f1']:>7.4f}  "
-                  f"{row['roc_auc']:>7.4f}  {row['FN']:>5d}")
-
-    print(f"\n  SOC Triage on Test Set:")
-    for lvl in [TRIAGE_LOW, TRIAGE_REVIEW, TRIAGE_HIGH]:
-        cnt = int((triage_test == lvl).sum())
-        print(f"    {lvl:<20s}: {cnt:>5d}")
-
-    print(f"\n  All results saved to: {OUT_ROOT}")
-    print()
+    subsets = split_train_val(train_raw)
+    train, calibration, tuning = [subsets[k] for k in ["train", "calibration", "tuning"]]
+    models = train_models(train[FEATURE_COLS].values, train.label_binary.values,
+                          calibration[FEATURE_COLS].values, calibration.label_binary.values)
+    val_probs = get_probabilities(models, tuning[FEATURE_COLS].values, "Tuning")
+    hybrid_cfg = tune_hybrid(val_probs["lr_prob_cal"], val_probs["rf_prob_cal"], tuning.label_binary.values)
+    w1, w2 = hybrid_cfg["w1_lr"], hybrid_cfg["w2_rf"]
+    summaries = {}
+    for split, frame, probs in [
+        ("Val", tuning, val_probs),
+        ("Test", test_raw, get_probabilities(models, test_raw[FEATURE_COLS].values, "Test")),
+    ]:
+        labels = frame.label_binary.values
+        probs["lr_pred"] = (probs["lr_prob_cal"] >= hybrid_cfg["lr_threshold"]).astype(int)
+        probs["rf_pred"] = (probs["rf_prob_cal"] >= hybrid_cfg["rf_threshold"]).astype(int)
+        scores = compute_hybrid_score(probs["lr_prob_cal"], probs["rf_prob_cal"], w1, w2)
+        raw_scores = compute_hybrid_score(probs["lr_prob_raw"], probs["rf_prob_raw"], w1, w2)
+        predictions = (scores >= hybrid_cfg["decision_threshold"]).astype(int)
+        levels = apply_triage(scores, hybrid_cfg["low_triage_threshold"], hybrid_cfg["high_triage_threshold"])
+        summary = evaluate_all(labels, probs, probs["lr_pred"], probs["rf_pred"], predictions, scores,
+                               hybrid_cfg["low_triage_threshold"], hybrid_cfg["high_triage_threshold"], split)
+        summaries[split] = summary
+        summary.to_csv(os.path.join(METRICS_DIR, f"secondary_evaluation_summary_{split.lower()}.csv"), index=False)
+        saved = save_predictions(frame, probs, raw_scores, scores, predictions, levels, split)
+        detailed_diagnostics(labels, probs, summary, split)
+        plot_triage_distribution(levels, labels, split)
+        if split == "Test":
+            seen = np.isin(feature_groups(frame[FEATURE_COLS]), feature_groups(train_raw[FEATURE_COLS]))
+            saved["features_seen_in_development"] = seen
+            saved.to_csv(os.path.join(PRED_DIR, "secondary_predictions_test.csv"), index=False)
+            unseen = ~seen
+            novelty_rows = [metric_record(labels[unseen], pred[unseen], prob[unseen], name, "Test unseen features")
+                            for name, pred, prob in [
+                                ("Logistic Regression", probs["lr_pred"], probs["lr_prob_cal"]),
+                                ("Random Forest", probs["rf_pred"], probs["rf_prob_cal"]),
+                                ("Hybrid Model", predictions, scores)]]
+            pd.DataFrame(novelty_rows).to_csv(os.path.join(METRICS_DIR, "secondary_unseen_feature_test.csv"), index=False)
+    analyse_feature_importance(models["rf_model"], FEATURE_COLS)
+    analyse_traffic_patterns(train[FEATURE_COLS].values, train.label_binary.values, FEATURE_COLS)
+    manifest = pd.concat([
+        subset[["row_index", "label_binary"]].assign(split=name)
+        for name, subset in subsets.items()
+    ], ignore_index=True)
+    manifest.to_csv(os.path.join(METRICS_DIR, "secondary_split_manifest.csv"), index=False)
+    config = {
+        "protocol_version": "corrected-v2",
+        "dataset_train": TRAIN_PATH, "dataset_test": TEST_PATH,
+        "source_sha256": {TRAIN_PATH: sha256_file(TRAIN_PATH), TEST_PATH: sha256_file(TEST_PATH)},
+        "random_seed": RANDOM_SEED, "feature_list": FEATURE_COLS, "n_features": len(FEATURE_COLS),
+        "split_method": "Feature-group-stratified approximately 70/15/15 training/calibration/tuning; no shared feature groups",
+        "n_train": len(train), "n_calibration": len(calibration), "n_val": len(tuning), "n_test": len(test_raw),
+        "class_counts": {k: {str(label): int(n) for label, n in v.label_binary.value_counts().items()}
+                         for k, v in subsets.items()},
+        "lr_params": LR_PARAMS, "rf_params": RF_PARAMS, "calibration_method": CALIBRATION_METHOD,
+        "note_raw_vs_calibrated": "Frozen base models calibrated on a separate calibration subset; tuning scores select all model thresholds. The weighted hybrid is not independently calibrated.",
+        "hybrid_w1_lr": w1, "hybrid_w2_rf": w2,
+        "decision_threshold": hybrid_cfg["decision_threshold"],
+        "low_triage_threshold": hybrid_cfg["low_triage_threshold"],
+        "high_triage_threshold": hybrid_cfg["high_triage_threshold"],
+        "lr_threshold": hybrid_cfg["lr_threshold"], "rf_threshold": hybrid_cfg["rf_threshold"],
+        "weight_search_results": hybrid_cfg["weight_search_results"], "triage_method": hybrid_cfg["triage_method"],
+        "test_rows_with_features_seen_in_development": int(seen.sum()),
+        "evaluation_caveats": [
+            "Retrospective re-evaluation: original test results were previously inspected.",
+            "Original train/test files contain overlapping feature vectors; supplementary unseen-feature metrics are provided.",
+            "No timestamp/session identifiers remain, so session separation and future-traffic generalization cannot be established.",
+            "Feature-group holdouts do not remove all forms of correlated traffic.",
+            "Triage thresholds are exploratory; review fraction is not measured analyst time savings.",
+        ],
+        "dependencies": {"python": platform.python_version(), "sklearn": sklearn.__version__,
+                         "pandas": pd.__version__, "numpy": np.__version__},
+        "val_evaluation_summary": summaries["Val"].to_dict(orient="records"),
+        "test_evaluation_summary": summaries["Test"].to_dict(orient="records"),
+        "runtime_seconds": round(time.time() - run_start, 2),
+    }
+    with open(os.path.join(METRICS_DIR, "secondary_experiment_config.json"), "w", encoding="utf-8") as stream:
+        json.dump(config, stream, indent=2)
+    print(summaries["Test"].to_string(index=False))
+    print("Corrected artifacts:", OUT_ROOT)
 
 
 if __name__ == "__main__":

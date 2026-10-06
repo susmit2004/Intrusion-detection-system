@@ -57,7 +57,7 @@ def _validate_dataframe(df: pd.DataFrame, name: str) -> None:
     missing = df.isnull().sum()
     missing_nonzero = missing[missing > 0]
     if len(missing_nonzero) == 0:
-        print("  Missing values     : None ✓")
+        print("  Missing values     : None [OK]")
     else:
         print(f"  Missing values     : {missing_nonzero.to_dict()}")
 
@@ -66,7 +66,7 @@ def _validate_dataframe(df: pd.DataFrame, name: str) -> None:
     inf_counts = np.isinf(df[num_cols]).sum()
     inf_nonzero = inf_counts[inf_counts > 0]
     if len(inf_nonzero) == 0:
-        print("  Infinite values    : None ✓")
+        print("  Infinite values    : None [OK]")
     else:
         print(f"  Infinite values    : {inf_nonzero.to_dict()}")
 
@@ -86,7 +86,7 @@ def _validate_dataframe(df: pd.DataFrame, name: str) -> None:
 
     # Timestamp range
     if "timestamp" in df.columns:
-        print(f"\n  Timestamp range    : {df['timestamp'].min()} → {df['timestamp'].max()}")
+        print(f"\n  Timestamp range    : {df['timestamp'].min()} -> {df['timestamp'].max()}")
 
     print()
 
@@ -100,7 +100,7 @@ def _check_features_present(df: pd.DataFrame) -> None:
             f"dataset: {missing_feats}\n"
             f"Available columns: {list(df.columns)}"
         )
-    print(f"  Feature columns check: all {len(FEATURE_COLS)} features present ✓")
+    print(f"  Feature columns check: all {len(FEATURE_COLS)} features present [OK]")
 
 
 # ---------------------------------------------------------------------------
@@ -129,10 +129,10 @@ def load_and_split() -> dict:
     # ------------------------------------------------------------------
     # 1. Load raw files
     # ------------------------------------------------------------------
-    print("\nLoading Primary_training_data.xlsx …")
+    print("\nLoading Primary_training_data.xlsx ...")
     df_train_raw = _load_raw(TRAIN_PATH)
 
-    print("Loading Primary_testing_data.xlsx …")
+    print("Loading Primary_testing_data.xlsx ...")
     df_test_raw  = _load_raw(TEST_PATH)
 
     # ------------------------------------------------------------------
@@ -157,17 +157,17 @@ def load_and_split() -> dict:
 
     print(f"\nTime-based Train / Validation split (VAL_FRAC={VAL_FRAC}):")
     print(f"  Training rows   : {len(df_tr):>6d}  "
-          f"({df_tr['timestamp'].min().date()} → {df_tr['timestamp'].max().date()})")
+          f"({df_tr['timestamp'].min().date()} -> {df_tr['timestamp'].max().date()})")
     print(f"  Validation rows : {len(df_val):>6d}  "
-          f"({df_val['timestamp'].min().date()} → {df_val['timestamp'].max().date()})")
+          f"({df_val['timestamp'].min().date()} -> {df_val['timestamp'].max().date()})")
     print(f"  Test rows       : {len(df_test_raw):>6d}  "
-          f"({df_test_raw['timestamp'].min().date()} → {df_test_raw['timestamp'].max().date()})")
+          f"({df_test_raw['timestamp'].min().date()} -> {df_test_raw['timestamp'].max().date()})")
 
     # Sanity check: training timestamps must all precede validation timestamps
     assert df_tr["timestamp"].max() <= df_val["timestamp"].min(), (
         "Temporal split violated: training data is not fully before validation data!"
     )
-    print("  Temporal ordering check: training ≤ validation ✓")
+    print("  Temporal ordering check: training <= validation [OK]")
 
     # ------------------------------------------------------------------
     # 4. Build feature matrices and target vectors

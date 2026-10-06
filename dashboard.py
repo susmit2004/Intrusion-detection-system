@@ -24,6 +24,7 @@ Sections
 import os
 import json
 import base64
+import sys
 
 import pandas as pd
 import numpy as np
@@ -73,10 +74,10 @@ preds_test  = _load_csv(os.path.join(PRED_DIR,    "predictions_test.csv"))
 # Optionally load raw training data for additional analyses
 try:
     df_train_raw = pd.read_excel(
-        os.path.join(DATA_DIR, "Primary_training_data.xlsx")
+        os.path.join(DATA_DIR, "Primary data", "Primary_training_data.xlsx")
     )
     df_test_raw  = pd.read_excel(
-        os.path.join(DATA_DIR, "Primary_testing_data.xlsx")
+        os.path.join(DATA_DIR, "Primary data", "Primary_testing_data.xlsx")
     )
     df_all = pd.concat([df_train_raw, df_test_raw], ignore_index=True)
     HAS_RAW = True
@@ -638,7 +639,8 @@ def update_pred_table(triage_val, label_val):
 # Entry point
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    print("\n🛡️  SOC Alert Triage Dashboard")
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    print("\nSOC Alert Triage Dashboard")
     print("   Opening at http://127.0.0.1:8050")
     print("   Press Ctrl+C to stop\n")
     app.run(debug=False, host="127.0.0.1", port=8050)

@@ -102,14 +102,14 @@ def train_models(
     print("="*60)
     lr_pipeline = build_lr_pipeline()
     lr_pipeline.fit(X_train, y_train)
-    print("  LR training complete ✓")
+    print("  LR training complete [OK]")
 
     print("\n" + "="*60)
     print("  Training Random Forest Classifier (no scaling)")
     print("="*60)
     rf = build_rf()
     rf.fit(X_train, y_train)
-    print(f"  RF training complete ✓  ({rf.n_estimators} trees)")
+    print(f"  RF training complete [OK]  ({rf.n_estimators} trees)")
 
     # ------------------------------------------------------------------
     # Probability calibration
@@ -121,10 +121,10 @@ def train_models(
     print("\n" + "="*60)
     print("  Calibrating probabilities (method='{}') on validation set".format(
         CALIBRATION_METHOD))
-    print("  NOTE: Calibrated scores ≠ raw probabilities.")
+    print("  NOTE: Calibrated scores != raw probabilities.")
     print("  Raw LR/RF probabilities are model outputs; calibrated scores")
     print("  are post-hoc adjustments to align predicted probabilities with")
-    print("  empirical frequencies — they remain estimates, not guarantees.")
+    print("  empirical frequencies - they remain estimates, not guarantees.")
     print("="*60)
 
     # Probability calibration strategy
@@ -144,13 +144,13 @@ def train_models(
         estimator=lr_pipeline, method=CALIBRATION_METHOD, cv=5
     )
     lr_calibrated.fit(X_val, y_val)
-    print("  LR calibration complete ✓")
+    print("  LR calibration complete [OK]")
 
     rf_calibrated = CalibratedClassifierCV(
         estimator=rf, method=CALIBRATION_METHOD, cv=5
     )
     rf_calibrated.fit(X_val, y_val)
-    print("  RF calibration complete ✓")
+    print("  RF calibration complete [OK]")
 
     # Convenience: expose scaled validation features for diagnostics
     X_val_scaled = lr_pipeline.named_steps["scaler"].transform(X_val)

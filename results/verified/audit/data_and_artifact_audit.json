@@ -1,0 +1,226 @@
+{
+  "primary": {
+    "files": [
+      {
+        "path": "Raw Data/Primary data/Primary_training_data.xlsx",
+        "sha256": "1da98e05c4d7dda5bc0a692daf82992fab690480296bf431476a2581b3f3cdd4",
+        "rows": 14425,
+        "columns": 28,
+        "duplicate_rows": 0,
+        "missing_features": 0,
+        "nonfinite_features": 0,
+        "labels": {
+          "Attempted Denial of Service": 3890,
+          "Attempted Administrator Privilege Gain": 2289,
+          "Not Suspicious Traffic": 1943,
+          "A Network Trojan was detected": 1556,
+          "Misc activity": 1495,
+          "Potentially Bad Traffic": 1403,
+          "Attempted Information Leak": 1227,
+          "Web Application Attack": 615,
+          "Successful Administrator Privilege Gain": 7
+        }
+      },
+      {
+        "path": "Raw Data/Primary data/Primary_testing_data.xlsx",
+        "sha256": "564018bf266924c4a3f607eaf9028af34e27503f0896aecafb8c5e8db5596a23",
+        "rows": 3607,
+        "columns": 28,
+        "duplicate_rows": 0,
+        "missing_features": 0,
+        "nonfinite_features": 0,
+        "labels": {
+          "Attempted Denial of Service": 993,
+          "Attempted Administrator Privilege Gain": 572,
+          "Not Suspicious Traffic": 465,
+          "Misc activity": 362,
+          "A Network Trojan was detected": 358,
+          "Potentially Bad Traffic": 353,
+          "Attempted Information Leak": 353,
+          "Web Application Attack": 147,
+          "Successful Administrator Privilege Gain": 4
+        }
+      }
+    ],
+    "test_rows_identical_to_development": 0,
+    "test_rows_with_features_seen_in_development": 138,
+    "session_identifiers_available": false,
+    "features": [
+      "proto_ICMP",
+      "proto_TCP",
+      "proto_UDP",
+      "iface_ens192",
+      "iface_eth0",
+      "src_port_clean",
+      "dest_port_clean",
+      "has_ports",
+      "is_well_known_port",
+      "is_ephemeral_src_port",
+      "flow_pkts_toserver",
+      "flow_pkts_toclient",
+      "total_packets",
+      "flow_bytes_toserver",
+      "flow_bytes_toclient",
+      "total_bytes",
+      "bytes_per_packet",
+      "avg_bytes_toserver_per_pkt",
+      "pkt_asymmetry_ratio",
+      "hour_of_day",
+      "day_of_week",
+      "is_weekend"
+    ],
+    "timestamp_ranges": [
+      {
+        "min": "2026-07-09 19:48:43.249597+00:00",
+        "max": "2026-09-04 16:06:05.223413+00:00"
+      },
+      {
+        "min": "2026-07-09 18:32:00.251782+00:00",
+        "max": "2026-09-04 16:06:04.429165+00:00"
+      }
+    ],
+    "test_strictly_after_development": false
+  },
+  "secondary": {
+    "files": [
+      {
+        "path": "Raw Data/Secondary data/Secondary_Train_70.csv",
+        "sha256": "ad7381f477d1648e742355df2e88ffa8eb460e976e94cc8f88abc41c16e32606",
+        "rows": 70000,
+        "columns": 13,
+        "duplicate_rows": 586,
+        "missing_features": 0,
+        "nonfinite_features": 0,
+        "labels": {
+          "BENIGN": 56567,
+          "DoS Hulk": 5511,
+          "PortScan": 3920,
+          "DDoS": 3032,
+          "DoS GoldenEye": 236,
+          "FTP-Patator": 195,
+          "SSH-Patator": 166,
+          "DoS Slowhttptest": 135,
+          "DoS slowloris": 134,
+          "Web Attack \u2013 Brute Force": 43,
+          "Bot": 36,
+          "Web Attack \u2013 XSS": 24,
+          "Infiltration": 1
+        }
+      },
+      {
+        "path": "Raw Data/Secondary data/Secondary_Test_30.csv",
+        "sha256": "5b1a2d8811be294d8e2df5898b7ae2e02789c8e290ba609630982a89d9eaa3d0",
+        "rows": 30000,
+        "columns": 13,
+        "duplicate_rows": 206,
+        "missing_features": 0,
+        "nonfinite_features": 0,
+        "labels": {
+          "BENIGN": 24078,
+          "DoS Hulk": 2337,
+          "PortScan": 1718,
+          "DDoS": 1459,
+          "DoS GoldenEye": 104,
+          "FTP-Patator": 85,
+          "DoS slowloris": 60,
+          "SSH-Patator": 59,
+          "DoS Slowhttptest": 47,
+          "Bot": 24,
+          "Web Attack \u2013 Brute Force": 19,
+          "Web Attack \u2013 XSS": 9,
+          "Web Attack \u2013 Sql Injection": 1
+        }
+      }
+    ],
+    "test_rows_identical_to_development": 325,
+    "test_rows_with_features_seen_in_development": 326,
+    "session_identifiers_available": false,
+    "features": [
+      "Source Port",
+      "Destination Port",
+      "Total Fwd Packets",
+      "Total Backward Packets",
+      "Total Length of Fwd Packets",
+      "Total Length of Bwd Packets",
+      "total_packets",
+      "total_bytes",
+      "bytes_per_packet",
+      "packet_asymmetry_ratio",
+      "hour_of_day",
+      "day_of_week"
+    ]
+  },
+  "historical_metric_replay": {
+    "primary": {
+      "checks": [
+        {
+          "model": "Logistic Regression",
+          "metric_differences": {
+            "accuracy": 2.661491544264649e-06,
+            "precision": 8.789514263640719e-06,
+            "recall": -2.7433924389974607e-06,
+            "f1": 3.833064660563323e-06,
+            "roc_auc": -1.981039431531162e-05
+          }
+        },
+        {
+          "model": "Random Forest",
+          "metric_differences": {
+            "accuracy": 7.097310784631716e-06,
+            "precision": -2.633355840608864e-06,
+            "recall": 3.743726998994834e-05,
+            "f1": -2.923878339777808e-06,
+            "roc_auc": 1.3839634214307672e-05
+          }
+        },
+        {
+          "model": "Hybrid",
+          "metric_differences": {
+            "accuracy": -1.9767119489921825e-05,
+            "precision": -3.315217391308689e-05,
+            "recall": 1.903646704581874e-05,
+            "f1": 3.625484577784999e-05,
+            "roc_auc": 4.44301164679306e-05
+          }
+        }
+      ],
+      "all_within_rounding_tolerance": true
+    },
+    "secondary": {
+      "checks": [
+        {
+          "model": "Logistic Regression",
+          "metric_differences": {
+            "accuracy": 0.0,
+            "precision": -9.708737864100314e-06,
+            "recall": -2.671394799053095e-05,
+            "f1": 4.53571848888501e-05,
+            "roc_auc": -3.1770081132420636e-05
+          }
+        },
+        {
+          "model": "Random Forest",
+          "metric_differences": {
+            "accuracy": 0.0,
+            "precision": -1.6087472452963603e-05,
+            "recall": 1.91827085443963e-05,
+            "f1": 4.77878352085348e-05,
+            "roc_auc": -2.3395881655452477e-05
+          }
+        },
+        {
+          "model": "Hybrid",
+          "metric_differences": {
+            "accuracy": 0.0,
+            "precision": 4.139095205935028e-05,
+            "recall": -2.3336710570753816e-05,
+            "f1": 8.99881816651682e-06,
+            "roc_auc": -4.624474005587853e-05
+          }
+        }
+      ],
+      "all_within_rounding_tolerance": true
+    }
+  },
+  "original_files_preserved": true
+}

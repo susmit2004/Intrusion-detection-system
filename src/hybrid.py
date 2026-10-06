@@ -194,8 +194,8 @@ def compute_triage_thresholds(
 
     print(f"\n  SOC Triage thresholds (from validation distribution):")
     print(f"    Low Suspicion  : hybrid_score < {low_thr:.4f}")
-    print(f"    Review         : {low_thr:.4f} ≤ hybrid_score < {high_thr:.4f}")
-    print(f"    High Suspicion : hybrid_score ≥ {high_thr:.4f}")
+    print(f"    Review         : {low_thr:.4f} <= hybrid_score < {high_thr:.4f}")
+    print(f"    High Suspicion : hybrid_score >= {high_thr:.4f}")
 
     return {
         "low_threshold":  low_thr,
