@@ -1,28 +1,46 @@
 @import "tailwindcss";
 
 :root {
-  --bg-base: #020b18;
-  --bg-card: #0a1628;
-  --bg-card-hover: #0f1f3d;
-  --border: #1e3a5f;
-  --border-subtle: #112240;
-  --text-primary: #e2e8f0;
-  --text-secondary: #94a3b8;
-  --text-muted: #475569;
-  --accent-blue: #3b82f6;
-  --accent-violet: #8b5cf6;
-  --accent-cyan: #06b6d4;
-  --risk-high: #f87171;
-  --risk-moderate: #fbbf24;
-  --risk-low: #34d399;
+  /* Base backgrounds */
+  --bg-base: #010D1A;
+  --bg-card: #071525;
+  --bg-card-hover: #0C1E35;
+  --bg-panel: #0E1C2F;
 
-  /* Design tokens */
-  --bg-panel: #151F32;
-  --border-color: #334155;
+  /* Borders */
+  --border: #1A3352;
+  --border-subtle: #0F2037;
+  --border-color: #1E3A5F;
+
+  /* Text */
+  --text-primary: #F0F4F8;
+  --text-secondary: #8FA3B8;
+  --text-muted: #3D5475;
+
+  /* Accents */
+  --accent-blue: #3B82F6;
+  --accent-violet: #8B5CF6;
+  --accent-cyan: #06B6D4;
   --accent: #22D3EE;
-  --color-normal: #34D399;
-  --color-review: #FBBF24;
+
+  /* Semantic surface aliases */
+  --surface-raised: #0C1E35;
+  --surface-inset: #040E1A;
+
+  /* Risk / status */
+  --risk-high: #F87171;
+  --risk-moderate: #FBBF24;
+  --risk-low: #34D399;
   --color-attack: #F87171;
+  --color-review: #FBBF24;
+  --color-normal: #34D399;
+
+  /* Glow tokens */
+  --glow-blue: rgba(59, 130, 246, 0.15);
+  --glow-violet: rgba(139, 92, 246, 0.15);
+
+  /* Transition token */
+  --transition-base: 150ms ease;
 }
 
 :focus-visible {
@@ -46,15 +64,26 @@ body {
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-base); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: #1E3A5F; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #2d5286; }
 
 /* Glass card utility */
 .glass {
-  background: rgba(10, 22, 40, 0.7);
+  background: rgba(7, 21, 37, 0.75);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(30, 58, 95, 0.6);
+  border: 1px solid rgba(26, 51, 82, 0.5);
+}
+
+/* Card border utility */
+.card-border {
+  border: 1px solid var(--border);
+  background-color: var(--bg-card);
+}
+
+/* Surface inset utility */
+.surface-inset {
+  background-color: var(--surface-inset);
 }
 
 /* Gradient text */
@@ -72,6 +101,12 @@ body {
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
 }
 .pulse-live { animation: pulse-ring 2s infinite; }
+
+/* Shimmer keyframe for future skeleton use */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
 
 /* Recharts overrides for dark theme */
 .recharts-cartesian-grid-horizontal line,

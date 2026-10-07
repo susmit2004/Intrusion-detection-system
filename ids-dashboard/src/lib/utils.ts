@@ -100,18 +100,21 @@ export function calcFNR(fn: number, tp: number): number {
 
 // ── Chart colors ─────────────────────────────────────────────────────────────
 export const CHART_COLORS = {
-  attack: "#f87171",
-  normal: "#34d399",
-  high: "#f87171",
-  moderate: "#fbbf24",
-  low: "#34d399",
-  lr: "#38bdf8",
-  rf: "#fb923c",
-  hybrid: "#a78bfa",
-  primary: "#60a5fa",
-  secondary: "#a78bfa",
-  grid: "#1e293b",
-  text: "#94a3b8",
+  attack: "#F87171",
+  normal: "#34D399",
+  high: "#F87171",
+  moderate: "#FBBF24",
+  low: "#34D399",
+  lr: "#38BDF8",
+  rf: "#FB923C",
+  hybrid: "#A78BFA",
+  primary: "#60A5FA",
+  secondary: "#A78BFA",
+  grid: "#1A3352",
+  text: "#8FA3B8",
+  gridLight: "#0F2037",
+  accent: "#22D3EE",
+  muted: "#3D5475",
 } as const;
 
 // ── CSV download ─────────────────────────────────────────────────────────────
