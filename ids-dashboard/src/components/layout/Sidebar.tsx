@@ -71,12 +71,12 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         {/* Logo */}
         <div className="flex items-center justify-between px-5 py-5 border-b" style={{ borderColor: "var(--border-color)" }}>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center ring-1 ring-white/10">
               <Wifi size={16} className="text-white" />
             </div>
             <div>
               <p className="text-sm font-bold text-white leading-none">IDS Dashboard</p>
-              <p className="text-[10px] text-slate-500 mt-0.5">SOC Analytics v1.0</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">Hybrid ML · SOC Alert Triage</p>
             </div>
           </div>
           <button
@@ -131,8 +131,10 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                   background: "color-mix(in srgb, var(--accent) 10%, transparent)",
                   borderColor: "color-mix(in srgb, var(--accent) 20%, transparent)",
                   color: "var(--accent)",
+                  transition: "var(--transition-base)",
                 } : {
                   color: "var(--text-secondary)",
+                  transition: "var(--transition-base)",
                 }}
               >
                 <span
@@ -162,10 +164,10 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
 
         {/* Footer */}
         <div className="px-4 py-4 border-t" style={{ borderColor: "var(--border-color)" }}>
-          <div className="rounded-lg bg-gradient-to-br from-blue-500/10 to-violet-500/10 border border-blue-500/20 p-3">
-            <p className="text-xs font-semibold text-blue-300">CIC-IDS-2017</p>
+          <div className="rounded-lg bg-gradient-to-br from-blue-500/8 via-violet-500/5 to-transparent border border-blue-500/20 p-3">
+            <p className="text-xs font-semibold text-blue-300">IDS Dashboard · MCA Research</p>
             <p className="text-[10px] text-slate-500 mt-0.5">
-              Hybrid ML Framework · MCA Project
+              Hybrid ML Framework · 2025
             </p>
           </div>
         </div>

@@ -1,0 +1,36 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Layout and shared UI component redesign: Sidebar, Navbar, DashboardLayout, StatCard, ChartCard, PageHeader, RiskBadge, DataTable. Depends on FEAT-001 tokens. Independent of FEAT-003 (page content). This is the component layer that every page inherits.",
+  "status": "completed",
+  "steps": [
+    "1. src/components/layout/Sidebar.tsx — TOKEN UPDATES + ENHANCEMENTS:\n   - Brand section: keep gradient icon but add a subtle ring: 'ring-1 ring-white/10' on the icon wrapper.\n   - Change logo subtext from 'SOC Analytics v1.0' to 'Hybrid ML · SOC Alert Triage'.\n   - Model status section: wrap each status row in a tiny rounded pill with the same pattern, add a 'pulse-live' class already defined in globals.css.\n   - Nav items: active state uses var(--accent) (already correct). Add transition style='transition:var(--transition-base)' on each Link.\n   - Footer card: update gradient from from-blue-500/10 to bg-gradient-to-br from-blue-500/8 via-violet-500/5 to-transparent. Change footer text from 'CIC-IDS-2017' to 'IDS Dashboard · MCA Research' and subtitle to 'Hybrid ML Framework · 2025'.\n   - No structural JSX changes; only class/style tweaks.",
+
+    "2. src/components/layout/Navbar.tsx — TOKEN UPDATES:\n   - Background: change inline style to 'color-mix(in srgb, var(--bg-base) 85%, transparent)' (slightly more opaque for clarity).\n   - Title: keep text-sm font-bold. Add a thin left accent bar: prepend a <span className='w-0.5 h-4 rounded-full bg-[var(--accent)] mr-1' /> before the h1 when title is not empty.\n   - 'Live' badge: add the pulse-live dot class.\n   - Mock Mode badge: keep as-is.",
+
+    "3. src/components/layout/DashboardLayout.tsx — NO CHANGES needed (already correct pass-through).",
+
+    "4. src/components/ui/StatCard.tsx — FULL VISUAL POLISH:\n   - Replace the plain border with a faint inner glow on hover: add className 'group' to the outer div and change hover:border-[#2d5286] to hover:border-[var(--accent-blue)]/40.\n   - Top gradient line: increase opacity from 60 to 80 and make it taller: h-px → stays at h-0.5 (no change).\n   - Value typography: keep text-2xl font-bold. For the 'large' variant use text-3xl (no change needed, already handled).\n   - Icon container: add a subtle drop-shadow via 'shadow-sm' class.\n   - Subtitle: change text-[11px] → text-xs for slightly more legibility.\n   - Add a very subtle bottom border gradient line (mirror of the top) using the same accent color at 20% opacity:\n     <div className={cn('absolute bottom-0 left-0 right-0 h-px opacity-20', ...same accent classes as top...)} />",
+
+    "5. src/components/ui/ChartCard.tsx — TOKEN UPDATES:\n   - Border hover: change hover:border-[#2d5286] to hover:border-[var(--accent-blue)]/40.\n   - Header background: add bg-gradient-to-b from-[var(--bg-card-hover)]/30 to-transparent on the header div.\n   - Title: keep text-sm font-semibold. Subtitle: keep text-[11px].\n   - Chart area: no change.",
+
+    "6. src/components/ui/PageHeader.tsx — ENHANCED BADGE + SUBTITLE:\n   - Badge: add an animated dot before the text for the 'blue' and 'emerald' color variants: <span className='w-1.5 h-1.5 rounded-full mr-1.5 inline-block' style={{background: 'currentColor'}} />.\n   - Title: change text-xl font-bold text-white → text-2xl font-bold (use CSS var --text-primary via style).\n   - Subtitle: change text-sm text-slate-400 → text-[13px] leading-relaxed (use CSS var --text-secondary via style).\n   - Add divider: after the badge/title/subtitle block, add a <div className='mt-3 h-px w-full' style={{background:'var(--border)'}} /> that appears only when the `badge` prop is set — this visually anchors the header to the content below.",
+
+    "7. src/components/ui/RiskBadge.tsx — TOKEN UPDATES ONLY:\n   - No logic changes. Verify the component already uses var(--color-attack), var(--color-review), var(--color-normal) — it does. No edits required. SKIP if already verified.",
+
+    "8. src/components/ui/DataTable.tsx — THREE TARGETED IMPROVEMENTS:\n   a) Search input: replace the hardcoded bg-[#0a1628] border-[#1e3a5f] with bg-[var(--bg-card)] border-[var(--border)] for token consistency. Focus ring: change focus:border-blue-500/50 to focus:border-[var(--accent-blue)]/60.\n   b) Striped rows: replace hardcoded bg-[#0a1628] / bg-[#0c1a30] with bg-[var(--bg-card)] / bg-[var(--bg-card-hover)] (i%2===0 = bg-card, else bg-card-hover). The hover remains hover:bg-blue-500/5.\n   c) Table header: replace bg-[#0f1f3d] with bg-[var(--surface-raised)] — add --surface-raised as alias for #0C1E35 in FEAT-001 globals.css (already included).\n   d) Pagination active button: change bg-blue-500/20 text-blue-400 border-blue-500/30 to use var(--accent-blue) tokens: 'bg-[var(--accent-blue)]/20 text-[var(--accent-blue)] border-[var(--accent-blue)]/30'.\n   e) PRESERVE exactly: the Column interface with the optional `id` field, the `key={(col.id ?? col.key) as string}` pattern in both <th> and <td>, the sort logic, the download logic, and the emptyMessage prop."
+  ],
+  "acceptance_criteria": [
+    "npm run build exits 0 with zero TypeScript or ESLint errors",
+    "DataTable.tsx still has `id?: string` on the Column interface",
+    "DataTable.tsx still uses `key={(col.id ?? col.key) as string}` in both th and td renders",
+    "No hardcoded '#0a1628' or '#0f1f3d' hex values remain in DataTable.tsx",
+    "Sidebar footer text updated to 'IDS Dashboard · MCA Research'",
+    "PageHeader title uses text-2xl"
+  ],
+  "verification": [
+    "cd d:\\Intrusion-detection-system\\ids-dashboard && npm run build"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

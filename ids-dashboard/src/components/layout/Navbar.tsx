@@ -12,7 +12,7 @@ interface NavbarProps {
 export default function Navbar({ onMenuClick, title, subtitle }: NavbarProps) {
   return (
     <header className="h-14 flex items-center justify-between px-4 lg:px-6 border-b backdrop-blur-sm sticky top-0 z-20"
-      style={{ borderColor: "var(--border-color)", background: "color-mix(in srgb, var(--bg-base) 80%, transparent)" }}>
+      style={{ borderColor: "var(--border-color)", background: "color-mix(in srgb, var(--bg-base) 85%, transparent)" }}>
       {/* Left: hamburger + title */}
       <div className="flex items-center gap-3">
         <button
@@ -23,7 +23,10 @@ export default function Navbar({ onMenuClick, title, subtitle }: NavbarProps) {
           <Menu size={18} />
         </button>
         <div>
-          <h1 className="text-sm font-bold leading-none" style={{ color: "var(--text-primary)" }}>{title}</h1>
+          <h1 className="text-sm font-bold leading-none flex items-center" style={{ color: "var(--text-primary)" }}>
+            {title && <span className="w-0.5 h-4 rounded-full bg-[var(--accent)] mr-1 inline-block flex-shrink-0" />}
+            {title}
+          </h1>
           {subtitle && (
             <p className="text-[10px] mt-0.5" style={{ color: "var(--text-secondary)" }}>{subtitle}</p>
           )}
@@ -39,7 +42,7 @@ export default function Navbar({ onMenuClick, title, subtitle }: NavbarProps) {
           </div>
         )}
         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-live" />
           <span className="text-[10px] text-emerald-400 font-medium hidden sm:inline">
             Live
           </span>

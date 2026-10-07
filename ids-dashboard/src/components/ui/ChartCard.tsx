@@ -23,13 +23,13 @@ export default function ChartCard({
     <div
       className={cn(
         "rounded-xl border",
-        "hover:border-[#2d5286] transition-colors duration-200",
+        "hover:border-[var(--accent-blue)]/40 transition-colors duration-200",
         className
       )}
       style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
     >
       {/* Header */}
-      <div className="flex items-start justify-between px-5 pt-4 pb-3 border-b" style={{ borderColor: "var(--border-color)" }}>
+      <div className="flex items-start justify-between px-5 pt-4 pb-3 border-b bg-gradient-to-b from-[var(--bg-card-hover)]/30 to-transparent" style={{ borderColor: "var(--border-color)" }}>
         <div>
           <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</h3>
           {subtitle && (

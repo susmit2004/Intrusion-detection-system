@@ -38,9 +38,9 @@ export default function StatCard({
   return (
     <div
       className={cn(
-        "rounded-xl border",
+        "rounded-xl border group",
         "p-4 flex flex-col gap-3 relative overflow-hidden",
-        "hover:border-[#2d5286] transition-colors duration-200",
+        "hover:border-[var(--accent-blue)]/40 transition-colors duration-200",
         className
       )}
       style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
@@ -64,7 +64,7 @@ export default function StatCard({
           {title}
         </p>
         {icon && (
-          <div className={cn("p-1.5 rounded-md", colors.bg)}>
+          <div className={cn("p-1.5 rounded-md shadow-sm", colors.bg)}>
             <span className={cn("block", colors.icon)}>{icon}</span>
           </div>
         )}
@@ -99,8 +99,21 @@ export default function StatCard({
       </div>
 
       {subtitle && (
-        <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>{subtitle}</p>
+        <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{subtitle}</p>
       )}
+
+      {/* Subtle bottom gradient line */}
+      <div
+        className={cn(
+          "absolute bottom-0 left-0 right-0 h-px opacity-20",
+          accent === "blue"    && "bg-gradient-to-r from-transparent via-blue-500 to-transparent",
+          accent === "violet"  && "bg-gradient-to-r from-transparent via-violet-500 to-transparent",
+          accent === "emerald" && "bg-gradient-to-r from-transparent via-emerald-500 to-transparent",
+          accent === "red"     && "bg-gradient-to-r from-transparent via-red-500 to-transparent",
+          accent === "amber"   && "bg-gradient-to-r from-transparent via-amber-500 to-transparent",
+          accent === "cyan"    && "bg-gradient-to-r from-transparent via-cyan-500 to-transparent",
+        )}
+      />
     </div>
   );
 }

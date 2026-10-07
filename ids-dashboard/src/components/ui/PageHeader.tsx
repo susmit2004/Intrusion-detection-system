@@ -24,23 +24,29 @@ export default function PageHeader({
 }: PageHeaderProps) {
   return (
     <div className="flex items-start justify-between mb-6">
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-1.5 w-full">
         {badge && (
           <span
             className={cn(
-              "self-start text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full border",
+              "self-start text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full border flex items-center",
               BADGE_COLORS[badgeColor]
             )}
           >
+            {(badgeColor === "blue" || badgeColor === "emerald") && (
+              <span className="w-1.5 h-1.5 rounded-full mr-1.5 inline-block" style={{ background: "currentColor" }} />
+            )}
             {badge}
           </span>
         )}
-        <h2 className="text-xl font-bold text-white">{title}</h2>
+        <h2 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>{title}</h2>
         {subtitle && (
-          <p className="text-sm text-slate-400">{subtitle}</p>
+          <p className="text-[13px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>{subtitle}</p>
+        )}
+        {badge && (
+          <div className="mt-3 h-px w-full" style={{ background: "var(--border)" }} />
         )}
       </div>
-      {children && <div className="flex items-center gap-2">{children}</div>}
+      {children && <div className="flex items-center gap-2 ml-4 flex-shrink-0">{children}</div>}
     </div>
   );
 }

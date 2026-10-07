@@ -85,7 +85,7 @@ export default function DataTable<T = any>({
                 value={query}
                 onChange={(e) => { setQuery(e.target.value); setPage(1); }}
                 placeholder="Search…"
-                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg bg-[#0a1628] border border-[#1e3a5f] text-slate-300 placeholder-slate-600 focus:outline-none focus:border-blue-500/50"
+                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg bg-[var(--bg-card)] border border-[var(--border)] text-slate-300 placeholder-slate-600 focus:outline-none focus:border-[var(--accent-blue)]/60"
               />
             </div>
           )}
@@ -104,10 +104,10 @@ export default function DataTable<T = any>({
       )}
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-[#1e3a5f]">
+      <div className="overflow-x-auto rounded-lg border" style={{ borderColor: "var(--border)" }}>
         <table className="w-full text-xs">
           <thead>
-            <tr className="bg-[#0f1f3d] border-b border-[#1e3a5f]">
+            <tr className="bg-[var(--surface-raised)] border-b" style={{ borderColor: "var(--border)" }}>
               {columns.map((col) => (
                 <th
                   key={(col.id ?? col.key) as string}
@@ -141,10 +141,11 @@ export default function DataTable<T = any>({
                 <tr
                   key={i}
                   className={cn(
-                    "border-b border-[#1e3a5f]/50 transition-colors",
-                    i % 2 === 0 ? "bg-[#0a1628]" : "bg-[#0c1a30]",
+                    "border-b transition-colors",
+                    i % 2 === 0 ? "bg-[var(--bg-card)]" : "bg-[var(--bg-card-hover)]",
                     "hover:bg-blue-500/5"
                   )}
+                  style={{ borderColor: "color-mix(in srgb, var(--border) 50%, transparent)" }}
                 >
                   {columns.map((col) => (
                     <td
@@ -193,7 +194,7 @@ export default function DataTable<T = any>({
                   className={cn(
                     "w-7 h-7 rounded text-xs font-medium transition-colors",
                     pg === safePage
-                      ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                      ? "bg-[var(--accent-blue)]/20 text-[var(--accent-blue)] border border-[var(--accent-blue)]/30"
                       : "text-slate-400 hover:text-white hover:bg-white/5"
                   )}
                 >
