@@ -108,11 +108,19 @@ export default function FileUpload({
             ? "border-blue-400 bg-blue-500/10"
             : validation.status === "ok"
             ? "border-emerald-500/40 bg-emerald-500/5 hover:border-emerald-500/60"
-            : validation.status === "error"
-            ? "border-red-500/40 bg-red-500/5"
-            : "border-[#1e3a5f] bg-[#0a1628] hover:border-blue-500/40 hover:bg-blue-500/5",
+            : "hover:bg-blue-500/5",
           loading && "pointer-events-none opacity-60"
         )}
+        style={
+          !dragOver && validation.status !== "ok"
+            ? validation.status === "error"
+              ? {
+                  borderColor: "color-mix(in srgb, var(--color-attack) 40%, transparent)",
+                  background: "color-mix(in srgb, var(--color-attack) 5%, transparent)",
+                }
+              : { borderColor: "var(--border-color)", background: "var(--bg-card)" }
+            : undefined
+        }
       >
         <input
           ref={inputRef}
@@ -125,14 +133,14 @@ export default function FileUpload({
 
         <div className="flex flex-col items-center gap-3">
           {loading ? (
-            <Loader2 size={28} className="text-blue-400 animate-spin" />
+            <Loader2 size={28} className="animate-spin" style={{ color: "var(--accent)" }} />
           ) : (
             statusIcon
           )}
 
           {loading ? (
             <div>
-              <p className="text-sm font-semibold text-blue-400">Analysing…</p>
+              <p className="text-sm font-semibold" style={{ color: "var(--accent)" }}>Analysing…</p>
               <p className="text-xs text-slate-500 mt-1">Running ML inference pipeline</p>
             </div>
           ) : validation.status === "idle" ? (

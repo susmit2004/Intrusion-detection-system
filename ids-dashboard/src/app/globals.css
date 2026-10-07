@@ -15,6 +15,19 @@
   --risk-high: #f87171;
   --risk-moderate: #fbbf24;
   --risk-low: #34d399;
+
+  /* Design tokens */
+  --bg-panel: #151F32;
+  --border-color: #334155;
+  --accent: #22D3EE;
+  --color-normal: #34D399;
+  --color-review: #FBBF24;
+  --color-attack: #F87171;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 * {

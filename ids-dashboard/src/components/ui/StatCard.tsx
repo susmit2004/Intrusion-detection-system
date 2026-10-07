@@ -38,11 +38,12 @@ export default function StatCard({
   return (
     <div
       className={cn(
-        "rounded-xl border border-[#1e3a5f] bg-[#0a1628]",
+        "rounded-xl border",
         "p-4 flex flex-col gap-3 relative overflow-hidden",
         "hover:border-[#2d5286] transition-colors duration-200",
         className
       )}
+      style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
     >
       {/* Subtle top gradient line */}
       <div
@@ -59,7 +60,7 @@ export default function StatCard({
 
       {/* Header row */}
       <div className="flex items-start justify-between">
-        <p className="text-xs font-medium text-slate-400 uppercase tracking-wider leading-none">
+        <p className="text-xs font-medium uppercase tracking-wider leading-none" style={{ color: "var(--text-secondary)" }}>
           {title}
         </p>
         {icon && (
@@ -73,9 +74,10 @@ export default function StatCard({
       <div className="flex items-end gap-2">
         <span
           className={cn(
-            "font-bold text-white tabular-nums",
+            "font-bold tabular-nums",
             large ? "text-3xl" : "text-2xl"
           )}
+          style={{ color: "var(--text-primary)" }}
         >
           {value}
         </span>
@@ -97,7 +99,7 @@ export default function StatCard({
       </div>
 
       {subtitle && (
-        <p className="text-[11px] text-slate-500">{subtitle}</p>
+        <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>{subtitle}</p>
       )}
     </div>
   );

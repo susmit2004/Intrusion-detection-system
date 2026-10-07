@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-// Root URL redirects to overview
+// Root URL redirects to home
 export default function RootPage() {
-  redirect("/overview");
+  redirect("/home");
 }

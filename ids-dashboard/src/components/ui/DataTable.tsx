@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, Download, Search } from "lucide-react";
 
 export interface Column<T = any> {
   key: keyof T | string;
+  id?: string;           // unique React key override — use when two columns share the same key
   header: string;
   render?: (row: T) => React.ReactNode;
   className?: string;
@@ -109,7 +110,7 @@ export default function DataTable<T = any>({
             <tr className="bg-[#0f1f3d] border-b border-[#1e3a5f]">
               {columns.map((col) => (
                 <th
-                  key={col.key as string}
+                  key={(col.id ?? col.key) as string}
                   onClick={() => col.sortable && toggleSort(col.key as string)}
                   className={cn(
                     "px-3 py-2.5 text-left font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap",
@@ -147,7 +148,7 @@ export default function DataTable<T = any>({
                 >
                   {columns.map((col) => (
                     <td
-                      key={col.key as string}
+                      key={(col.id ?? col.key) as string}
                       className={cn("px-3 py-2 text-slate-300", col.className)}
                     >
                       {col.render

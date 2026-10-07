@@ -11,7 +11,8 @@ interface NavbarProps {
 
 export default function Navbar({ onMenuClick, title, subtitle }: NavbarProps) {
   return (
-    <header className="h-14 flex items-center justify-between px-4 lg:px-6 border-b border-[#1e3a5f] bg-[#020b18]/80 backdrop-blur-sm sticky top-0 z-20">
+    <header className="h-14 flex items-center justify-between px-4 lg:px-6 border-b backdrop-blur-sm sticky top-0 z-20"
+      style={{ borderColor: "var(--border-color)", background: "color-mix(in srgb, var(--bg-base) 80%, transparent)" }}>
       {/* Left: hamburger + title */}
       <div className="flex items-center gap-3">
         <button
@@ -22,9 +23,9 @@ export default function Navbar({ onMenuClick, title, subtitle }: NavbarProps) {
           <Menu size={18} />
         </button>
         <div>
-          <h1 className="text-sm font-bold text-white leading-none">{title}</h1>
+          <h1 className="text-sm font-bold leading-none" style={{ color: "var(--text-primary)" }}>{title}</h1>
           {subtitle && (
-            <p className="text-[10px] text-slate-500 mt-0.5">{subtitle}</p>
+            <p className="text-[10px] mt-0.5" style={{ color: "var(--text-secondary)" }}>{subtitle}</p>
           )}
         </div>
       </div>

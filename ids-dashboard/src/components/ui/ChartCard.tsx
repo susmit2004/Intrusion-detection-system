@@ -22,17 +22,18 @@ export default function ChartCard({
   return (
     <div
       className={cn(
-        "rounded-xl border border-[#1e3a5f] bg-[#0a1628]",
+        "rounded-xl border",
         "hover:border-[#2d5286] transition-colors duration-200",
         className
       )}
+      style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
     >
       {/* Header */}
-      <div className="flex items-start justify-between px-5 pt-4 pb-3 border-b border-[#1e3a5f]">
+      <div className="flex items-start justify-between px-5 pt-4 pb-3 border-b" style={{ borderColor: "var(--border-color)" }}>
         <div>
-          <h3 className="text-sm font-semibold text-white">{title}</h3>
+          <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{title}</h3>
           {subtitle && (
-            <p className="text-[11px] text-slate-500 mt-0.5">{subtitle}</p>
+            <p className="text-[11px] mt-0.5" style={{ color: "var(--text-secondary)" }}>{subtitle}</p>
           )}
         </div>
         {action && <div>{action}</div>}

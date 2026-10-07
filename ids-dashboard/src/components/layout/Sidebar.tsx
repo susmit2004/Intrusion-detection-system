@@ -16,6 +16,7 @@ import {
   Wifi,
   X,
   GitMerge,
+  House,
 } from "lucide-react";
 
 interface NavItem {
@@ -26,6 +27,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
+  { label: "Home",             href: "/home",          icon: <House size={16} /> },
   { label: "Overview",          href: "/overview",        icon: <LayoutDashboard size={16} /> },
   { label: "Primary Model",     href: "/primary-model",   icon: <Shield size={16} />,        badge: "22 feat" },
   { label: "Secondary Model",   href: "/secondary-model", icon: <Database size={16} />,      badge: "12 feat" },
@@ -59,14 +61,15 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       <aside
         className={cn(
           "fixed top-0 left-0 z-40 h-full w-64 flex flex-col",
-          "bg-[#020b18] border-r border-[#1e3a5f]",
+          "border-r",
           "transition-transform duration-300 ease-in-out",
           open ? "translate-x-0" : "-translate-x-full",
           "lg:translate-x-0 lg:static lg:z-auto"
         )}
+        style={{ background: "var(--bg-base)", borderColor: "var(--border-color)" }}
       >
         {/* Logo */}
-        <div className="flex items-center justify-between px-5 py-5 border-b border-[#1e3a5f]">
+        <div className="flex items-center justify-between px-5 py-5 border-b" style={{ borderColor: "var(--border-color)" }}>
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
               <Wifi size={16} className="text-white" />
@@ -85,7 +88,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         </div>
 
         {/* Model status indicators */}
-        <div className="px-4 py-3 border-b border-[#1e3a5f] space-y-2">
+        <div className="px-4 py-3 border-b space-y-2" style={{ borderColor: "var(--border-color)" }}>
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">
               Model Status
@@ -119,17 +122,22 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                 onClick={onClose}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm",
-                  "transition-all duration-150 group relative",
+                  "transition-all duration-150 group relative border",
                   active
-                    ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                    ? "border"
+                    : "border-transparent hover:bg-white/5"
                 )}
+                style={active ? {
+                  background: "color-mix(in srgb, var(--accent) 10%, transparent)",
+                  borderColor: "color-mix(in srgb, var(--accent) 20%, transparent)",
+                  color: "var(--accent)",
+                } : {
+                  color: "var(--text-secondary)",
+                }}
               >
                 <span
-                  className={cn(
-                    "transition-colors",
-                    active ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300"
-                  )}
+                  className="transition-colors"
+                  style={active ? { color: "var(--accent)" } : { color: "var(--text-secondary)" }}
                 >
                   {item.icon}
                 </span>
@@ -145,7 +153,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                   </span>
                 )}
                 {active && (
-                  <ChevronRight size={12} className="text-blue-400" />
+                  <ChevronRight size={12} style={{ color: "var(--accent)" }} />
                 )}
               </Link>
             );
@@ -153,7 +161,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         </nav>
 
         {/* Footer */}
-        <div className="px-4 py-4 border-t border-[#1e3a5f]">
+        <div className="px-4 py-4 border-t" style={{ borderColor: "var(--border-color)" }}>
           <div className="rounded-lg bg-gradient-to-br from-blue-500/10 to-violet-500/10 border border-blue-500/20 p-3">
             <p className="text-xs font-semibold text-blue-300">CIC-IDS-2017</p>
             <p className="text-[10px] text-slate-500 mt-0.5">

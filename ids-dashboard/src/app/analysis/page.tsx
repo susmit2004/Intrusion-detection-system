@@ -26,7 +26,7 @@ const STATS_COLUMNS: Column<FeatureStats>[] = [
   { key: "attack_mean",   header: "Attack Mean",    render: (r) => (
     <span className="font-mono text-slate-400">{r.attack_mean.toLocaleString(undefined, {maximumFractionDigits: 1})}</span>
   )},
-  { key: "attack_median", header: "Ratio A/N",      render: (r) => {
+  { key: "attack_median", id: "attack_normal_ratio", header: "Ratio A/N", render: (r) => {
     const ratio = r.normal_median > 0 ? r.attack_median / r.normal_median : 0;
     const strong = ratio < 0.3 || ratio > 3;
     return (

@@ -98,8 +98,8 @@ export default function EnsemblePage() {
             <code className="text-amber-300">total_bytes</code>, <code className="text-amber-300">total_packets</code>,{" "}
             <code className="text-amber-300">hour_of_day</code>, <code className="text-amber-300">day_of_week</code>) have
             incompatible scales between the two datasets. They must be provided twice with prefixes:
-            <code className="text-blue-300 ml-1">pri_*</code> for the Primary model's scale and{" "}
-            <code className="text-violet-300">sec_*</code> for the Secondary model's scale.
+            <code className="text-blue-300 ml-1">pri_*</code> for the Primary model&apos;s scale and{" "}
+            <code className="text-violet-300">sec_*</code> for the Secondary model&apos;s scale.
             Download the template CSV for correct column names and example values.
           </p>
         </div>

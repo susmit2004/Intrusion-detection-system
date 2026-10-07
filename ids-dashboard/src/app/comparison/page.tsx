@@ -73,7 +73,7 @@ export default function ComparisonPage() {
         <p className="text-[12px] text-amber-200/70 leading-relaxed">
           The Primary and Secondary models were trained on completely different datasets with different attack-rate distributions
           (Primary: 82.9% attack, Secondary: 19.7% attack). Direct metric comparison should account for these differences.
-          The Secondary model's higher overall accuracy is partially explained by the larger, more balanced test set.
+          The Secondary model&apos;s higher overall accuracy is partially explained by the larger, more balanced test set.
           Both models are independently evaluated on their own unseen test data — no cross-contamination.
         </p>
       </div>

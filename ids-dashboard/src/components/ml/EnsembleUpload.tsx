@@ -114,16 +114,25 @@ export default function EnsembleUpload({ onSubmit, loading = false }: EnsembleUp
           "transition-all duration-200",
           dragOver              ? "border-violet-400 bg-violet-500/10"
           : fileStatus.status === "ok"    ? "border-emerald-500/50 bg-emerald-500/5 hover:border-emerald-500/70"
-          : fileStatus.status === "error" ? "border-red-500/40 bg-red-500/5"
-          : "border-[#1e3a5f] bg-[#0a1628] hover:border-violet-500/40 hover:bg-violet-500/5",
+          : "hover:bg-violet-500/5",
           loading && "pointer-events-none opacity-60"
         )}
+        style={
+          !dragOver && fileStatus.status !== "ok"
+            ? fileStatus.status === "error"
+              ? {
+                  borderColor: "color-mix(in srgb, var(--color-attack) 40%, transparent)",
+                  background: "color-mix(in srgb, var(--color-attack) 5%, transparent)",
+                }
+              : { borderColor: "var(--border-color)", background: "var(--bg-card)" }
+            : undefined
+        }
       >
         <input ref={inputRef} type="file" accept=".csv" className="hidden" onChange={handleChange} disabled={loading} />
 
         <div className="flex flex-col items-center gap-3">
           {loading ? (
-            <Loader2 size={28} className="text-violet-400 animate-spin" />
+            <Loader2 size={28} className="animate-spin" style={{ color: "var(--accent)" }} />
           ) : fileStatus.status === "ok" ? (
             <CheckCircle size={28} className="text-emerald-400" />
           ) : fileStatus.status === "error" ? (
@@ -134,7 +143,7 @@ export default function EnsembleUpload({ onSubmit, loading = false }: EnsembleUp
 
           {loading ? (
             <div>
-              <p className="text-sm font-semibold text-violet-400">Running ensemble inference…</p>
+              <p className="text-sm font-semibold" style={{ color: "var(--accent)" }}>Running ensemble inference…</p>
               <p className="text-xs text-slate-500 mt-1">Both models processing in parallel</p>
             </div>
           ) : fileStatus.status === "idle" ? (

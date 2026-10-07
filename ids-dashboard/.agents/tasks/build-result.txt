@@ -1,0 +1,15 @@
+Build result: EXIT CODE 0 (success)
+Run: npm run build
+Date: 2026-10-07 14:12:24
+
+All 14 routes generated successfully:
+  /home (new)
+  / (redirects to /home)
+  /overview, /analysis, /comparison, /configuration
+  /ensemble, /performance, /primary-model
+  /results, /secondary-model
+  /_not-found
+
+TypeScript: 0 errors
+Lint: 0 errors (20 pre-existing warnings in unchanged files)
+

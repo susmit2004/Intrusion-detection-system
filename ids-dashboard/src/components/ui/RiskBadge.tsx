@@ -9,28 +9,25 @@ interface RiskBadgeProps {
   className?: string;
 }
 
-const RISK_CONFIG: Record<
-  RiskLevel,
-  { bg: string; border: string; text: string; icon: React.ReactNode; label: string }
-> = {
+type RiskConfig = {
+  colorVar: string;
+  icon: React.ReactNode;
+  label: string;
+};
+
+const RISK_CONFIG: Record<RiskLevel, RiskConfig> = {
   "High Risk": {
-    bg: "bg-red-500/10",
-    border: "border-red-500/30",
-    text: "text-red-400",
+    colorVar: "var(--color-attack)",
     icon: <ShieldAlert size={11} />,
     label: "High Risk",
   },
   "Moderate Risk": {
-    bg: "bg-amber-500/10",
-    border: "border-amber-500/30",
-    text: "text-amber-400",
+    colorVar: "var(--color-review)",
     icon: <AlertTriangle size={11} />,
     label: "Moderate Risk",
   },
   "Low Risk": {
-    bg: "bg-emerald-500/10",
-    border: "border-emerald-500/30",
-    text: "text-emerald-400",
+    colorVar: "var(--color-normal)",
     icon: <CheckCircle size={11} />,
     label: "Low Risk",
   },
@@ -53,10 +50,14 @@ export function RiskBadge({
     <span
       className={cn(
         "inline-flex items-center rounded-full border font-medium",
-        cfg.bg, cfg.border, cfg.text,
         SIZE_MAP[size],
         className
       )}
+      style={{
+        background: `color-mix(in srgb, ${cfg.colorVar} 10%, transparent)`,
+        borderColor: `color-mix(in srgb, ${cfg.colorVar} 30%, transparent)`,
+        color: cfg.colorVar,
+      }}
     >
       {showIcon && cfg.icon}
       {cfg.label}
@@ -77,16 +78,19 @@ export function PredictionBadge({
   className,
 }: PredictionBadgeProps) {
   const isAttack = prediction === "Attack";
+  const colorVar = isAttack ? "var(--color-attack)" : "var(--color-normal)";
   return (
     <span
       className={cn(
         "inline-flex items-center rounded-full border font-medium",
         SIZE_MAP[size],
-        isAttack
-          ? "bg-red-500/10 border-red-500/30 text-red-400"
-          : "bg-emerald-500/10 border-emerald-500/30 text-emerald-400",
         className
       )}
+      style={{
+        background: `color-mix(in srgb, ${colorVar} 10%, transparent)`,
+        borderColor: `color-mix(in srgb, ${colorVar} 30%, transparent)`,
+        color: colorVar,
+      }}
     >
       {isAttack ? <AlertCircle size={11} /> : <CheckCircle size={11} />}
       {prediction}
