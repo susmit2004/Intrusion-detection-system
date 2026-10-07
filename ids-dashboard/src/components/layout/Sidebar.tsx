@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Wifi,
   X,
+  GitMerge,
 } from "lucide-react";
 
 interface NavItem {
@@ -25,14 +26,15 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Overview",         href: "/overview",        icon: <LayoutDashboard size={16} /> },
-  { label: "Primary Model",    href: "/primary-model",   icon: <Shield size={16} />,        badge: "22 feat" },
-  { label: "Secondary Model",  href: "/secondary-model", icon: <Database size={16} />,      badge: "12 feat" },
-  { label: "Model Comparison", href: "/comparison",      icon: <GitCompare size={16} /> },
-  { label: "Analysis",         href: "/analysis",        icon: <BarChart3 size={16} /> },
-  { label: "Performance",      href: "/performance",     icon: <Activity size={16} /> },
-  { label: "Results",          href: "/results",         icon: <Cpu size={16} /> },
-  { label: "Configuration",    href: "/configuration",   icon: <Settings size={16} /> },
+  { label: "Overview",          href: "/overview",        icon: <LayoutDashboard size={16} /> },
+  { label: "Primary Model",     href: "/primary-model",   icon: <Shield size={16} />,        badge: "22 feat" },
+  { label: "Secondary Model",   href: "/secondary-model", icon: <Database size={16} />,      badge: "12 feat" },
+  { label: "Ensemble Analysis", href: "/ensemble",        icon: <GitMerge size={16} />,      badge: "NEW" },
+  { label: "Model Comparison",  href: "/comparison",      icon: <GitCompare size={16} /> },
+  { label: "Analysis",          href: "/analysis",        icon: <BarChart3 size={16} /> },
+  { label: "Performance",       href: "/performance",     icon: <Activity size={16} /> },
+  { label: "Results",           href: "/results",         icon: <Cpu size={16} /> },
+  { label: "Configuration",     href: "/configuration",   icon: <Settings size={16} /> },
 ];
 
 interface SidebarProps {
@@ -133,7 +135,12 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                 </span>
                 <span className="flex-1 font-medium">{item.label}</span>
                 {item.badge && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-400 font-mono">
+                  <span className={cn(
+                    "text-[10px] px-1.5 py-0.5 rounded font-mono",
+                    item.badge === "NEW"
+                      ? "bg-violet-500/20 text-violet-300 border border-violet-500/30"
+                      : "bg-slate-700 text-slate-400"
+                  )}>
                     {item.badge}
                   </span>
                 )}

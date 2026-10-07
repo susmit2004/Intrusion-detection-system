@@ -1,0 +1,4 @@
+Destination Port,Source Port,Total Backward Packets,Total Fwd Packets,Total Length of Bwd Packets,Total Length of Fwd Packets,avg_bytes_toserver_per_pkt,dest_port_clean,flow_bytes_toclient,flow_bytes_toserver,flow_pkts_toclient,flow_pkts_toserver,has_ports,iface_ens192,iface_eth0,is_ephemeral_src_port,is_weekend,is_well_known_port,packet_asymmetry_ratio,pkt_asymmetry_ratio,pri_bytes_per_packet,pri_day_of_week,pri_hour_of_day,pri_total_bytes,pri_total_packets,proto_ICMP,proto_TCP,proto_UDP,sec_bytes_per_packet,sec_day_of_week,sec_hour_of_day,sec_total_bytes,sec_total_packets,src_port_clean
+443,54321,4,3,4800,120,83.3,443,4800,250,4,3,1,1,0,1,0,1,0.75,0.75,721.4,1,14,5050,7,0,1,0,702.9,1,14,4920,7,54321
+80,52180,1,2,0,12,6.0,80,0,12,1,2,1,1,0,1,0,1,2.0,2.0,4.0,4,10,12,3,0,1,0,4.0,4,10,12,3,52180
+21,61000,5,6,80,150,25.0,21,80,150,5,6,1,1,0,1,0,1,1.2,1.2,20.9,3,9,230,11,0,1,0,20.9,3,9,230,11,61000

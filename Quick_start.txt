@@ -1,6 +1,233 @@
-# Train models and generate all results (~10 seconds)
-python train_and_evaluate.py
+============================================================
+  CONFIDENCE-BASED HYBRID ML FRAMEWORK FOR SOC ALERT TRIAGE
+  Quick Start Guide — Complete Sequence
+============================================================
 
-# Launch interactive SOC dashboard
-python dashboard.py
-# → opens at http://127.0.0.1:8050
+Run every command from the project root:
+  d:\Intrusion-detection-system\
+
+============================================================
+STEP 1 — Install Python dependencies (run once)
+============================================================
+
+  pip install -r requirements.txt
+
+  What it does:
+    Installs all required Python libraries listed in requirements.txt,
+    including pandas, numpy, scikit-learn, joblib, matplotlib, seaborn,
+    plotly, dash, openpyxl, and scipy.
+    Only needed the first time or after updating requirements.txt.
+
+============================================================
+STEP 2 — Train the Primary Model
+============================================================
+
+  python train_and_evaluate.py
+
+  What it does:
+    Loads Primary_training_data.xlsx and Primary_testing_data.xlsx from
+    Raw Data/Primary data/.
+    Trains Logistic Regression and Random Forest on 22 Suricata network
+    flow features. Calibrates both models using isotonic regression.
+    Tunes hybrid weights (w_LR=0.30, w_RF=0.70) and the decision
+    threshold (0.5025) on the validation set.
+    Evaluates all three models (LR, RF, Hybrid) on the unseen test set.
+    Saves trained models to results/models/ and all metrics, plots,
+    and predictions to results/.
+    Runtime: ~10 seconds.
+
+============================================================
+STEP 3 — Train the Secondary Model
+============================================================
+
+  python "ML Models\ML Models\Secondary Model\run_secondary_model.py"
+
+  What it does:
+    Loads Secondary_Train_70.csv and Secondary_Test_30.csv from
+    Raw Data/Secondary data/.
+    Trains Logistic Regression and Random Forest on 12 CIC-IDS-2017
+    network flow features using a feature-group-stratified 70/15/15
+    train/calibration/tuning split.
+    Calibrates both models using isotonic regression on the calibration
+    subset. Tunes hybrid weights (w_LR=0.00, w_RF=1.00) and the
+    decision threshold (0.4536) on the tuning set.
+    Evaluates all three models on the unseen 30,000-row test set.
+    Saves trained models to ML Models/ML Models/Secondary Model/models/
+    and all metrics, plots, and predictions to the same folder.
+    Runtime: ~15 seconds.
+
+============================================================
+STEP 4 — Generate the Cross-Dataset Comparison Report
+============================================================
+
+  python "ML Models\ML Models\comparison_report.py"
+
+  What it does:
+    Reads the already-saved result files from both models.
+    No retraining, no data merging, no new inference.
+    Produces a 11-section text report (comparison_report.txt),
+    a side-by-side metrics CSV (comparison_metrics.csv), and
+    10 comparison plots in ML Models/ML Models/comparison_plots/.
+    Shows which model wins on Accuracy, Precision, Recall, F1, AUC,
+    and False Negatives.
+    Runtime: ~5 seconds.
+
+============================================================
+STEP 5 — Launch the Primary Model Dashboard (port 8050)
+============================================================
+
+  python dashboard.py
+
+  What it does:
+    Starts an interactive Dash web application that reads the
+    pre-generated results from results/ and displays them.
+    Sections: Overview, Protocols, Ports, ML Results, Model
+    Performance, Feature Importance.
+    Open in browser: http://127.0.0.1:8050
+    Press Ctrl+C to stop.
+
+============================================================
+STEP 6 — Launch the Secondary Model Dashboard (port 8051)
+============================================================
+
+  python "ML Models\ML Models\Secondary Model\dashboard\secondary_soc_dashboard.py"
+
+  What it does:
+    Starts an interactive Dash web application that reads the
+    pre-generated secondary model results.
+    7 tabs: Overview, Model Scores, Feature Analysis, Performance,
+    Event Explorer, Custom Analysis (CSV upload with live prediction),
+    and Configuration.
+    The Custom Analysis tab lets you upload any CSV with the 12
+    required secondary features and get live risk classification
+    (High / Moderate / Low Risk) without rerunning the full pipeline.
+    Open in browser: http://127.0.0.1:8051
+    Press Ctrl+C to stop.
+
+============================================================
+STEP 7 — Install Node.js dependencies for the Next.js dashboard
+         (run once, from the ids-dashboard folder)
+============================================================
+
+  cd ids-dashboard
+  npm install
+
+  What it does:
+    Installs all required Node.js packages (Next.js, React, Tailwind CSS,
+    Recharts, Lucide icons, PapaParse, clsx) listed in package.json.
+    Only needed the first time or after updating package.json.
+    Run this from inside the ids-dashboard folder.
+
+============================================================
+STEP 8 — Launch the Next.js Unified Dashboard (port 3000)
+============================================================
+
+  cd ids-dashboard
+  npm run dev
+
+  What it does:
+    Starts the full-featured Next.js + TypeScript + Tailwind CSS
+    dashboard that combines both models in one modern web interface.
+    9 pages accessible from the sidebar:
+      /overview         — KPI cards for both models combined
+      /primary-model    — Primary model CSV upload + predictions
+      /secondary-model  — Secondary model CSV upload + predictions
+      /ensemble         — NEW: Upload one CSV, run both models
+                          simultaneously via weighted ensemble scoring
+                          (34-column schema, configurable weights)
+      /comparison       — Side-by-side model comparison charts
+      /analysis         — Feature importance + attack signatures
+      /performance      — Full metrics, confusion matrices, ROC curves
+      /results          — Sample prediction records table
+      /configuration    — All experiment parameters and API setup
+    Runs in Mock Mode by default (uses real experiment result numbers
+    but does not call the Python backend).
+    To connect the live Python backend, set
+      NEXT_PUBLIC_API_URL=http://localhost:8000
+    in a .env.local file inside ids-dashboard/ before running.
+    Open in browser: http://localhost:3000
+    Press Ctrl+C to stop.
+
+============================================================
+STEP 9 — Run Ensemble Tests (optional, verify ensemble logic)
+============================================================
+
+  python -m pytest ensemble/tests/test_ensemble.py -v
+
+  What it does:
+    Runs 32 focused unit tests covering:
+    - CSV column validation (missing, forbidden, non-finite values)
+    - Feature extraction order for both models
+    - Ensemble weight and threshold validation
+    - Score formula correctness (manual vs computed)
+    - Risk level boundary checks
+    - Model disagreement flagging
+    - Row order preservation
+    - Regression tests (original individual models still work)
+    All 32 tests should pass in ~7 seconds.
+
+============================================================
+STEP 10 — Run Ensemble on a CSV from the command line (optional)
+============================================================
+
+  python ensemble/ensemble_predict.py template --output ensemble_template.csv
+
+  What it does:
+    Generates a 34-column CSV template with 3 example rows
+    (Normal, DoS attack, FTP brute-force). Use this as your
+    starting point to build ensemble input files.
+
+  python ensemble/ensemble_predict.py predict your_file.csv --output results.csv
+
+  What it does:
+    Runs both trained models on your_file.csv, computes the
+    weighted ensemble score (default w=0.5/0.5), and saves
+    predictions with risk levels to results.csv.
+    Optional flags:
+      --w-primary   0.6   (weight for the Primary model)
+      --w-secondary 0.4   (weight for the Secondary model)
+      --threshold   0.5   (classification cutoff)
+
+  python ensemble/ensemble_predict.py schema
+
+  What it does:
+    Prints the complete 34-column ensemble schema with the
+    model tag (PRI/SEC) and description for every column.
+
+============================================================
+FULL SEQUENCE (copy-paste, run in order)
+============================================================
+
+  pip install -r requirements.txt
+  python train_and_evaluate.py
+  python "ML Models\ML Models\Secondary Model\run_secondary_model.py"
+  python "ML Models\ML Models\comparison_report.py"
+  python dashboard.py
+  python "ML Models\ML Models\Secondary Model\dashboard\secondary_soc_dashboard.py"
+  cd ids-dashboard && npm install && npm run dev
+
+============================================================
+NOTES
+============================================================
+
+  - Steps 2, 3, 4 only need to be re-run if you retrain the models.
+    The dashboards (Steps 5, 6, 8) read saved result files and can
+    be launched directly without rerunning the training pipeline.
+
+  - Steps 5 and 6 (Dash dashboards) can run at the same time as
+    Step 8 (Next.js dashboard) because they use different ports
+    (8050, 8051, 3000).
+
+  - The Secondary Model dashboard's Custom Analysis tab and the
+    Next.js Ensemble page both use the trained models from disk.
+    Make sure Steps 2 and 3 have been run at least once before
+    using those features.
+
+  - All dataset files must remain in their original locations:
+      Raw Data/Primary data/Primary_training_data.xlsx
+      Raw Data/Primary data/Primary_testing_data.xlsx
+      Raw Data/Secondary data/Secondary_Train_70.csv
+      Raw Data/Secondary data/Secondary_Test_30.csv
+    Do NOT rename, move, or modify these files.
+
+============================================================

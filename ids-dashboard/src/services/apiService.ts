@@ -158,3 +158,59 @@ export async function checkApiHealth(): Promise<boolean> {
 }
 
 export const isMockMode = USE_MOCK;
+
+// ── Ensemble API ─────────────────────────────────────────────────────────────
+import type { EnsembleApiResponse } from "@/lib/ensembleData";
+import { MOCK_ENSEMBLE_RESULT } from "@/lib/ensembleData";
+
+export interface EnsembleConfig {
+  w_primary:   number;
+  w_secondary: number;
+  threshold:   number;
+}
+
+export async function predictEnsemble(
+  file: File,
+  config: EnsembleConfig
+): Promise<EnsembleApiResponse> {
+  if (USE_MOCK) {
+    await new Promise((r) => setTimeout(r, 900 + Math.random() * 600));
+    const text      = await file.text();
+    const rowCount  = Math.max(1, text.split("\n").length - 2);
+    // Scale mock data to actual row count
+    const scale     = Math.ceil(rowCount / MOCK_ENSEMBLE_RESULT.rows.length);
+    const rows      = Array.from({ length: rowCount }, (_, i) => ({
+      ...MOCK_ENSEMBLE_RESULT.rows[i % MOCK_ENSEMBLE_RESULT.rows.length],
+      row_index: i,
+    }));
+    const attacks   = rows.filter((r) => r.final_prediction === "Attack").length;
+    return {
+      summary: {
+        total_rows:      rowCount,
+        skipped_rows:    0,
+        normal_count:    rowCount - attacks,
+        attack_count:    attacks,
+        high_risk:       rows.filter((r) => r.risk_level === "High Risk").length,
+        moderate_risk:   rows.filter((r) => r.risk_level === "Moderate Risk").length,
+        low_risk:        rows.filter((r) => r.risk_level === "Low Risk").length,
+        disagreements:   rows.filter((r) => r.disagreement).length,
+        attack_rate_pct: Math.round((attacks / rowCount) * 1000) / 10,
+        w_primary:       config.w_primary,
+        w_secondary:     config.w_secondary,
+        threshold:       config.threshold,
+        pri_threshold:   0.5025,
+        sec_threshold:   0.4536,
+      },
+      rows,
+      errors:        [],
+      processing_ms: Math.round(80 + Math.random() * 300),
+    };
+  }
+
+  const form = new FormData();
+  form.append("file",        file);
+  form.append("w_primary",   config.w_primary.toString());
+  form.append("w_secondary", config.w_secondary.toString());
+  form.append("threshold",   config.threshold.toString());
+  return post<EnsembleApiResponse>("/api/ensemble/predict", form);
+}
