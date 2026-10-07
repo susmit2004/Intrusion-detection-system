@@ -1,0 +1,21 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Design-token foundation: update globals.css with a richer CSS variable palette and replace CHART_COLORS in utils.ts with more saturated, accessible hex values. This is the lowest-level change; every other FEAT reads these tokens. Independent of FEAT-002 and FEAT-003 (no imports changed).",
+  "status": "completed",
+  "steps": [
+    "1. Edit src/app/globals.css. Replace the entire :root block with an expanded palette:\n   - Keep all existing vars unchanged in semantics.\n   - Rename/add: --bg-base:#010D1A, --bg-card:#071525, --bg-card-hover:#0C1E35, --bg-panel:#0E1C2F, --border:#1A3352, --border-subtle:#0F2037, --border-color:#1E3A5F (keep), --text-primary:#F0F4F8, --text-secondary:#8FA3B8, --text-muted:#3D5475.\n   - Accent tokens: --accent-blue:#3B82F6, --accent-violet:#8B5CF6, --accent-cyan:#06B6D4 (keep), --accent:#22D3EE (keep).\n   - Semantic aliases: --surface-raised:#0C1E35, --surface-inset:#040E1A.\n   - Risk/status tokens: --risk-high:#F87171, --risk-moderate:#FBBF24, --risk-low:#34D399, --color-attack:#F87171, --color-review:#FBBF24, --color-normal:#34D399 (all unchanged).\n   - Add glow tokens: --glow-blue:rgba(59,130,246,0.15), --glow-violet:rgba(139,92,246,0.15).\n   - Add transition token: --transition-base:150ms ease.\n   - Add .card-border utility class: border with var(--border) color and bg-[var(--bg-card)].\n   - Add .surface-inset utility class.\n   - Update scrollbar thumb to #1E3A5F.\n   - Update .glass to use --bg-card with 0.75 alpha and --border with 0.5 alpha.\n   - Add new keyframe 'shimmer' for future skeleton use (does not break anything).\n   - Keep all existing Recharts overrides (.recharts-cartesian-grid-horizontal, etc.).",
+    "2. Edit src/lib/utils.ts. Replace only the CHART_COLORS const (lines ~86-100) with:\n   attack:'#F87171', normal:'#34D399', high:'#F87171', moderate:'#FBBF24', low:'#34D399',\n   lr:'#38BDF8', rf:'#FB923C', hybrid:'#A78BFA', primary:'#60A5FA', secondary:'#A78BFA',\n   grid:'#1A3352', text:'#8FA3B8',\n   gridLight:'#0F2037', accent:'#22D3EE', muted:'#3D5475'.\n   Add two new entries: gridLight and muted. Do NOT change any function, import, or export.\n   NOTE: grid changes from '#1e293b' to '#1A3352' — this is intentional (matches new --border token). All chart components reference CHART_COLORS.grid so they pick up the new value automatically."
+  ],
+  "acceptance_criteria": [
+    "npm run build exits 0 with zero TypeScript or ESLint errors",
+    "globals.css :root block contains all new tokens including --glow-blue, --glow-violet, --transition-base",
+    "CHART_COLORS.gridLight and CHART_COLORS.muted exist in utils.ts",
+    "No existing CSS variable names are removed (only additions and value tweaks)"
+  ],
+  "verification": [
+    "cd d:\\Intrusion-detection-system\\ids-dashboard && npm run build"
+  ],
+  "blocked_reason": null,
+  "findings": "Build passed (exit 0) with zero TypeScript and ESLint errors. globals.css :root expanded with --surface-raised, --surface-inset, --glow-blue, --glow-violet, --transition-base; .card-border and .surface-inset utility classes added; @keyframes shimmer added; .glass updated to new token values; scrollbar thumb updated to #1E3A5F. CHART_COLORS in utils.ts updated to uppercase hex values matching new design tokens; gridLight and muted entries added. No existing variables or exports removed."
+}

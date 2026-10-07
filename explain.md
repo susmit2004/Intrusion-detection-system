@@ -22,9 +22,9 @@ The system is built using **machine learning** — meaning the computer learns a
 Every day, thousands or millions of network packets flow through computer networks. Most of them are normal — someone browsing a website, downloading a file, or sending an email. But some packets are sent by attackers who want to crash servers (DoS/DDoS), scan for open ports, steal passwords (Brute Force), or plant malware (Botnet).
 
 **The problem is:** It is impossible for a human to manually check every single packet. We need an automated, intelligent system that can:
-- Detect attacks in real time
-- Work on raw network statistics (not full packet content)
-- Give a risk score so security teams can prioritize their response
+- Analyze prepared network-flow data from CSV files rather than claiming live packet monitoring
+- Work on flow statistics, not full packet contents
+- Give an estimated score and triage category to help security teams prioritize review
 
 ---
 
@@ -32,10 +32,11 @@ Every day, thousands or millions of network packets flow through computer networ
 
 The objective of this project is to:
 
-1. Train machine learning models on real labeled network traffic data
-2. Build an inference pipeline that can accept new CSV files and predict whether each row is Normal or an Attack
-3. Assign a risk level (High / Moderate / Low) to each prediction
-4. Display everything on an interactive dashboard for Security Operations Center (SOC) analysts
+1. Evaluate Logistic Regression and Random Forest in two independent network-intrusion experiments: the primary Suricata testbed and the secondary CIC-IDS-2017 dataset
+2. Build experiment-specific inference workflows for prepared CSV input and saved results
+3. Combine calibrated model scores within each experiment and assign triage/risk categories using that experiment’s configuration
+4. Compare the independent results and provide a separate cross-experiment inference component
+5. Present the research outputs in dashboards for Security Operations Center (SOC) alert-triage review
 
 ---
 
@@ -502,32 +503,33 @@ The dashboard reads these results and displays KPI cards, charts, and tables.
 
 ## 14. Dashboard Workflow
 
-The dashboard is built using **Dash** (a Python library for interactive web applications). It reads pre-computed results from saved CSV and JSON files and displays them.
+The repository has three dashboard interfaces. Two Python Dash apps inspect saved experiment artifacts: the primary app at `apps/primary-dashboard/dashboard.py` reads `artifacts/primary/`, and the secondary app at `apps/secondary-dashboard/secondary_soc_dashboard.py` reads `artifacts/secondary/`. They run independently (ports 8050 and 8051) and should be opened after their matching experiment outputs have been generated.
 
-### How each KPI card is calculated:
+The consolidated research frontend is the Next.js app in `apps/web-dashboard/`. It gives access to the Home, Overview, Suricata Testbed, CIC-IDS-2017, Cross-Experiment Ensemble, Comparison, Feature Analysis, Performance, Prediction Results, and Configuration pages. The two dataset experiments remain distinct; the ensemble page represents the separate cross-experiment inference workflow and its own combined input schema.
 
-**Total Events:** `len(predictions_test.csv)` = total number of rows in the prediction CSV
+The web dashboard's API adapter uses demonstration responses by default when `NEXT_PUBLIC_API_URL` is not set. No HTTP backend/API service is included in this repository. If a compatible external API is configured, the frontend expects health, overview, primary/secondary prediction and configuration, comparison, and ensemble prediction routes. An environment variable only points to that external API; it does not create or launch one.
 
-**Normal:** Count of rows where `label_binary == 0`
+### What users see
 
-**Attack:** Count of rows where `label_binary == 1`
+- Experiment-specific pages show saved results for the corresponding dataset, with dataset context.
+- Comparison and evaluation pages summarize previously saved metrics and plots.
+- CSV inference controls validate the expected input schema before processing.
+- In mock mode, uploaded-file responses are demonstration output and should be labeled as such; they are not evidence of a live API call or newly trained model.
+- The UI describes model scores as estimates and presents triage categories with text labels as well as color.
 
-**High Risk:** Count of rows where `triage_level == "High Suspicion"` (test set) or `risk_level == "High Risk"` (custom upload)
+### Theme behavior
 
-**Moderate Risk:** Count of rows in the medium/review category
+The Next.js dashboard supports dark and light themes through shared CSS custom properties in `apps/web-dashboard/src/app/globals.css`. On first visit, a small initialization script reads the operating-system color preference and sets the theme before rendering. The navigation toggle switches themes and saves the selected value in browser local storage as `soc-dashboard-theme`, so it remains selected after reload. When no saved choice exists, later operating-system preference changes are followed. Theme tokens cover shared surfaces, text, borders, risk/model colors, chart labels and grids, and tooltips; keyboard focus remains visible in either theme. The toggle has a descriptive accessible name and supports keyboard activation.
 
-**Low Risk:** Count of rows in the low suspicion category
+### Start the web dashboard
 
-### The dashboard has 7 tabs:
-1. **Overview** — KPI cards, traffic donut chart, attack category breakdown, triage level distribution
-2. **Model Scores** — Probability distribution histograms, confusion matrices, ROC curves
-3. **Feature Analysis** — RF feature importance bar chart, normal vs attack comparison
-4. **Performance** — Full metrics table (Accuracy, Precision, Recall, F1, AUC, FN counts)
-5. **Event Explorer** — Filterable table of all 30,000 predictions with probabilities
-6. **Custom Analysis** — Upload your own CSV and get live predictions
-7. **Config** — Experiment configuration, hybrid weights, tuning parameters
+```bash
+cd apps/web-dashboard
+npm install
+npm run dev
+```
 
----
+Open `http://localhost:3000/home`. Use `npm run lint`, `npx tsc --noEmit`, and `npm run build` for frontend checks.
 
 ## 15. Example of Normal Traffic
 
@@ -630,7 +632,7 @@ When the RF sees bytes_per_packet = 1200 and total_bytes = 50,000, it recognizes
 **The label "DoS Attack" in your CSV is just a text string.** The model never reads it. Only the 12 numbers are given to the model.
 
 ### The solution:
-Use test data whose numerical values are sampled from the **actual CIC-IDS-2017 training distribution**. The project provides `test_data_model_compatible.csv` for this purpose.
+Use test data whose numerical values are sampled from the **actual CIC-IDS-2017 training distribution**. The project provides `data/samples/test_data_model_compatible.csv` for this purpose.
 
 ### Why is this NOT data leakage prevention?
 
@@ -748,27 +750,71 @@ INFERENCE PHASE (runs every time a CSV is uploaded)
 
 ---
 
-## 21. Short Viva Explanation (memorize this)
+## 21. Short Viva Explanation
 
-> **"Sir/Ma'am, my project is a Network Intrusion Detection System built on the CIC-IDS-2017 dataset.**
+> **“My project is a confidence-based hybrid machine-learning framework for SOC alert triage. It includes two independent network-intrusion experiments: a primary Suricata testbed experiment and a secondary CIC-IDS-2017 experiment. Each has its own input data, feature schema, LR and Random Forest models, hybrid settings, evaluation, and saved artifacts.**
 >
-> **What it does:** It automatically classifies network traffic as Normal or Attack and assigns a risk level — High, Moderate, or Low — to help SOC analysts prioritize their response.
+> **For each experiment, calibrated LR and RF scores are combined according to that experiment’s configuration. The score is compared with its configured decision threshold and mapped to triage or risk categories to help analysts prioritize review. The cross-experiment ensemble is a separate inference component that uses the artifacts from both experiments with a distinct combined input schema; it does not train on pooled data.**
 >
-> **How it works:** I extract 12 network flow features from CSV files — things like how many packets were sent, how many bytes per packet, which ports were used, and what day it happened. I trained two machine learning models on real labeled traffic: Logistic Regression, which finds linear patterns, and Random Forest, which uses 300 decision trees to learn complex patterns.
+> **The project provides Python Dash views for saved results and a Next.js SOC research dashboard. The web dashboard has Home, experiment, comparison, analysis, performance, result, configuration, and ensemble pages. It supports dark and light themes, follows the system preference on first visit, and remembers a user-selected mode.**
 >
-> **Both models output a probability** — a number between 0 and 1 — representing how likely a flow is an attack. I combine them using a weighted formula called the Hybrid Score. In this project, the validation data showed that Random Forest alone is optimal, so the weight is w_RF = 1.0.
->
-> **The decision threshold** — 0.4536 — was automatically selected on the validation set to maximize F1 score. If the Hybrid Score is above this threshold, the flow is classified as an attack.
->
-> **For risk levels:** Score ≥ 0.70 is High Risk, 0.40 to 0.70 is Moderate Risk, and below 0.40 is Low Risk.
->
-> **Results on 30,000 unseen test rows:** Random Forest achieves 99.86% accuracy, 99.66% recall, and only 20 missed attacks out of 5,922 actual attacks.
->
-> **The dashboard** shows total events, normal vs attack counts, risk distributions, confusion matrices, ROC curves, and feature importance — all without writing a single line of code.
->
-> **The key insight** from this project is that attack traffic in CIC-IDS-2017 is statistically very different from normal traffic — especially bytes_per_packet (median 6 for attacks vs 63 for normal) and total_bytes (median 30 vs 219). Random Forest learned these patterns extremely well."
+> **The web dashboard uses demonstration responses by default for API-backed upload flows. This repository does not include a separate HTTP backend, and the dashboard should not be described as monitoring live traffic. Saved evaluation metrics and model scores are research outputs and estimates, not guaranteed confidence percentages or operational decisions.”**
 
 ---
 
-*Document generated from confirmed project artifacts: secondary_experiment_config.json, secondary_evaluation_summary_test.csv, secondary_feature_stats_by_class.csv, CIC-IDS-2017 training data.*
-*All numerical values are real results — none are invented.*
+## 22. Current Project Structure and Components
+
+The repository is organized by project role. The two base experiments are independent: each has its own inputs, features, model artifacts, metrics, and predictions. The cross-experiment ensemble is a separate inference workflow that consumes both sets of trained model artifacts; it does not mean the training datasets were merged.
+
+```text
+project/
+├── apps/
+│   ├── web-dashboard/          # Next.js SOC research dashboard
+│   ├── primary-dashboard/      # Python Dash view for primary saved results
+│   └── secondary-dashboard/    # Python Dash view for secondary saved results
+├── experiments/
+│   ├── primary/                # Suricata testbed pipeline and src modules
+│   └── secondary/              # CIC-IDS-2017 pipeline
+├── research/
+│   ├── ensemble/               # Separate cross-experiment inference utility
+│   ├── comparison/             # Saved-result comparison report
+│   └── shared/                 # Shared research support
+├── data/
+│   ├── raw/primary/             # Primary source datasets
+│   ├── raw/secondary/           # Secondary source datasets
+│   └── samples/                 # CSV examples and templates
+├── artifacts/
+│   ├── primary/                 # Primary models, metrics, plots, predictions
+│   ├── secondary/               # Secondary experiment outputs
+│   ├── comparison/              # Comparison outputs
+│   └── verified/                # Preserved verified results and audit records
+├── tests/                       # Pipeline and ensemble tests
+└── tools/                       # Audit and data utility scripts
+```
+
+The repository does not contain a separate FastAPI or Flask HTTP backend. The web dashboard's API adapter can use mock/demo responses by default or call a compatible external service when configured. The Python Dash applications are separate interfaces that read the experiment artifacts.
+
+## 23. Current Web Dashboard and Theme
+
+The consolidated frontend lives in `apps/web-dashboard/` and uses Next.js App Router, React, TypeScript, Tailwind CSS, Recharts, and Lucide. Its shared navigation groups the project introduction and overview, the two independent experiment pages, the separate ensemble workflow, and evaluation/configuration views. The interface is responsive and built around the SOC research dashboard visual system.
+
+The frontend supports dark mode and light mode. On a first visit it follows the operating system preference; the small theme initialization script applies that choice before the page is painted to avoid showing the wrong theme briefly. The theme toggle in the shared header can be used by mouse or keyboard and has a clear accessible label. A selection is stored as `soc-dashboard-theme` in browser local storage and persists across page reloads. When no saved choice exists, the dashboard follows system preference changes.
+
+Shared CSS variables define the page background, cards, borders, text, accents, model/chart colors, semantic risk colors, chart grids, and tooltip surfaces. Each theme applies those tokens throughout pages, tables, charts, forms, loading/error states, and focus indicators. Theme changes affect presentation only; they do not change routes, API payloads, data fetching, model calculations, saved results, or experiment behavior. No theme dependency was added.
+
+### Web dashboard routes
+
+- `/home` and `/overview`: project introduction and research overview
+- `/primary-model`: Suricata testbed experiment
+- `/secondary-model`: CIC-IDS-2017 experiment
+- `/ensemble`: separate cross-experiment inference
+- `/comparison`, `/analysis`, and `/performance`: saved experiment comparisons and evaluation
+- `/results`: prediction-result table
+- `/configuration`: dataset and model configuration
+
+## 24. Important Interpretation Notes
+
+- The primary and secondary experiments use different dataset sources and feature schemas. Interpret each experiment's saved metrics within its own dataset context.
+- The ensemble utility requires artifacts from both experiments and expects a distinct 34-feature CSV schema. It is not a model retrained on pooled datasets.
+- The web dashboard defaults to demonstration API responses unless an external API URL is configured. Demonstration responses must not be described as live alerts or fresh model inference.
+- Calibrated probabilities and hybrid scores remain estimates. They are research outputs for analyst review, not guarantees or a substitute for operational security decisions.

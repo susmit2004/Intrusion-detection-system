@@ -3,8 +3,9 @@
 **Research Project Documentation**  
 **Dataset:** Primary testbed traffic (authorized cybersecurity lab)  
 **Task:** Binary classification — Normal (0) vs Suspicious/Attack (1) traffic  
-**Random Seed:** 42 (all stochastic operations)  
-**Total Runtime:** ~10 seconds on a standard workstation  
+**Primary random seed:** 42 (stochastic operations in the primary experiment)
+
+**Primary reference runtime:** ~10 seconds on the documented workstation; the secondary experiment has its own pipeline and runtime.
 
 ---
 
@@ -22,7 +23,7 @@
 10. [Evaluation Results](#10-evaluation-results)
 11. [Feature Importance Analysis](#11-feature-importance-analysis)
 12. [Output Artefacts](#12-output-artefacts)
-13. [Interactive SOC Dashboard](#13-interactive-soc-dashboard)
+13. [Interactive SOC Dashboards](#13-interactive-soc-dashboards)
 14. [Module Reference](#14-module-reference)
 15. [Reproducibility Record](#15-reproducibility-record)
 16. [How to Run](#16-how-to-run)
@@ -32,81 +33,54 @@
 
 ## 1. Project Overview
 
-This project implements a **Confidence-Based Hybrid Machine Learning Framework** designed to assist Security Operations Center (SOC) analysts in triaging network alerts. Instead of relying on a single classifier, the framework combines two complementary base models — a linear model (Logistic Regression) and a tree-based model (Random Forest) — into a hybrid ensemble whose output is a calibrated confidence score that can be directly mapped to a human-readable SOC triage level.
+This project implements a **Confidence-Based Hybrid Machine Learning Framework** to help Security Operations Center (SOC) analysts prioritize network alerts. It contains two independent experiments: a primary Suricata testbed pipeline and a secondary CIC-IDS-2017 pipeline. Each experiment evaluates Logistic Regression, Random Forest, and its own weighted hybrid within its dataset and feature schema. A separate cross-experiment inference component can combine the two trained experiment outputs for a 34-feature input; that component does not merge or retrain the experiments. The resulting model scores are estimates used to support triage, not guaranteed confidence percentages or operational decisions.
 
 ### Core research contributions
 
-- A **weighted probability combination** scheme where weights are determined empirically on a held-out validation set rather than assumed to be equal.
+- Experiment-specific **weighted probability combinations** tuned on held-out validation data; the two experiments keep distinct feature spaces and configurations.
 - A clear separation between **raw model probability** and **calibrated confidence score**, with explicit documentation of what each represents and does not represent.
 - A **time-based data split** that respects the temporal nature of network traffic data, preventing any form of future-data leakage.
-- A **three-level SOC triage output** (Low Suspicion / Review / High Suspicion) with boundaries derived from the validation data distribution, not hard-coded.
-- An **interactive Plotly Dash dashboard** that reads all results from disk, making every metric and visualization completely driven by actual experimental results.
+- Experiment-specific triage and risk outputs; the primary triage bands are derived from its validation distribution, while each experiment retains its own thresholds.
+- Separate interfaces for the primary and secondary experiment outputs, plus a consolidated Next.js research dashboard with explicit demo/API modes.
 
 ---
 
 ## 2. Repository Structure
 
+The repository separates interfaces, experiment code, research utilities, input data, and generated outputs:
+
+```text
+project/
+├── apps/
+│   ├── web-dashboard/               # Next.js UI; API adapter uses mock mode by default
+│   ├── primary-dashboard/           # Python Dash UI for the primary experiment
+│   └── secondary-dashboard/         # Python Dash UI for the secondary experiment
+├── experiments/
+│   ├── primary/                     # Primary pipeline and its src package
+│   └── secondary/                   # Independent secondary pipeline
+├── research/
+│   ├── ensemble/                    # Cross-experiment inference and CSV template
+│   ├── comparison/                  # Saved-result comparison generator
+│   └── shared/                      # Shared research checks and metrics
+├── data/
+│   ├── raw/primary/                 # Original primary datasets
+│   ├── raw/secondary/               # Original secondary datasets
+│   └── samples/                     # Example inference CSVs and templates
+├── artifacts/
+│   ├── primary/                     # Primary models, metrics, plots, predictions
+│   ├── secondary/                   # Secondary models, metrics, plots, predictions
+│   ├── comparison/                  # Generated cross-experiment comparison outputs
+│   └── verified/                    # Preserved verified outputs and audit records
+├── tests/
+├── tools/
+├── PROJECT_DOCUMENTATION.md
+├── Quick_start.txt
+└── requirements.txt
 ```
-D:\Intrusion-detection-system\
-│
-├── Raw Data\                              # Original, unmodified data files
-│   ├── Primary_training_data.xlsx         # Pre-split training set (14,425 rows)
-│   ├── Primary_testing_data.xlsx          # Pre-split test set (3,607 rows)
-│   ├── Primary_Dataset.xlsx               # Full primary dataset (reference)
-│   └── Secondary_Dataset.csv             # Secondary dataset (NOT used here)
-│
-├── src\                                   # All Python source modules
-│   ├── __init__.py
-│   ├── config.py                          # Central configuration & constants
-│   ├── data_loader.py                     # Dataset loading, validation, splitting
-│   ├── models.py                          # LR pipeline, RF, calibration, saving
-│   ├── hybrid.py                          # Weight optimisation, thresholds, triage
-│   ├── evaluation.py                      # Metrics, confusion matrices, ROC curves
-│   ├── feature_analysis.py               # Feature importance, distribution plots
-│   └── predictions_writer.py             # Per-record predictions CSV writer
-│
-├── results\                               # All generated outputs (never committed raw data)
-│   ├── models\
-│   │   ├── lr_pipeline.joblib             # Fitted LR + StandardScaler pipeline
-│   │   ├── rf_model.joblib                # Fitted RandomForestClassifier
-│   │   ├── lr_calibrated.joblib           # Calibrated LR wrapper
-│   │   └── rf_calibrated.joblib           # Calibrated RF wrapper
-│   │
-│   ├── metrics\
-│   │   ├── experiment_metadata.json       # Full reproducibility record
-│   │   ├── hybrid_config.json             # Tuned weights, thresholds, triage bands
-│   │   ├── evaluation_summary_val.csv     # Val set metrics table (LR / RF / Hybrid)
-│   │   ├── evaluation_summary_test.csv    # Test set metrics table (LR / RF / Hybrid)
-│   │   ├── feature_importance.csv         # RF feature importance scores
-│   │   ├── feature_stats_by_class.csv     # Mean/std/median per feature per class
-│   │   ├── lr_report_val.txt              # LR classification report (validation)
-│   │   ├── lr_report_test.txt             # LR classification report (test)
-│   │   ├── rf_report_val.txt              # RF classification report (validation)
-│   │   ├── rf_report_test.txt             # RF classification report (test)
-│   │   ├── hybrid_report_val.txt          # Hybrid classification report (validation)
-│   │   └── hybrid_report_test.txt         # Hybrid classification report (test)
-│   │
-│   ├── plots\
-│   │   ├── cm_lr_val.png                  # LR confusion matrix (validation)
-│   │   ├── cm_lr_test.png                 # LR confusion matrix (test)
-│   │   ├── cm_rf_val.png                  # RF confusion matrix (validation)
-│   │   ├── cm_rf_test.png                 # RF confusion matrix (test)
-│   │   ├── cm_hybrid_val.png              # Hybrid confusion matrix (validation)
-│   │   ├── cm_hybrid_test.png             # Hybrid confusion matrix (test)
-│   │   ├── roc_comparison_val.png         # ROC curves overlay (validation)
-│   │   ├── roc_comparison_test.png        # ROC curves overlay (test)
-│   │   ├── feature_importance.png         # RF feature importance bar chart
-│   │   └── feature_distribution_comparison.png  # Normal vs Attack distributions
-│   │
-│   └── predictions\
-│       ├── predictions_test.csv           # Per-record predictions (test set, 3,607 rows)
-│       └── predictions_val.csv            # Per-record predictions (val set, 2,163 rows)
-│
-├── train_and_evaluate.py                  # Main pipeline orchestration script
-├── dashboard.py                           # Interactive Plotly Dash SOC dashboard
-├── requirements.txt                       # Pinned Python dependencies
-└── PROJECT_DOCUMENTATION.md              # This file
-```
+
+The repository contains no separate FastAPI or Flask API service. The Next.js `apiService.ts` defines expected HTTP calls and uses mock data when `NEXT_PUBLIC_API_URL` is not configured. The Python Dash apps are interfaces that read saved artifacts; they are not the API service expected by that adapter.
+
+Raw datasets and generated artifacts are currently tracked in Git. For future large data and model files, choose Git LFS or external/versioned artifact storage rather than assuming `.gitignore` will remove files already tracked.
 
 ---
 
@@ -123,7 +97,7 @@ Traffic captured from an **authorized cybersecurity testbed** — not from a pub
 | `Primary_training_data.xlsx` | 14,425 | Train + validation source |
 | `Primary_testing_data.xlsx` | 3,607 | Held-out final test set |
 
-The `Secondary_Dataset.csv` (1.22 GB, ~2.83M rows) is intentionally **never loaded or merged** in this pipeline per research requirements.
+The primary pipeline does not load or merge the secondary dataset. The CIC-IDS-2017 files are inputs to the separate secondary experiment under `experiments/secondary/`; the experiments keep their own feature schemas, models, splits, and saved outputs.
 
 ### Dataset dimensions
 
@@ -483,7 +457,7 @@ Feature importance is computed from the fitted Random Forest as **mean decrease 
 
 ### Traffic pattern insights (training set)
 
-A statistical comparison of each feature between Normal and Attack classes (mean, std, median) is saved to `results/metrics/feature_stats_by_class.csv`. Visual distribution comparisons for the top 8 features are saved to `results/plots/feature_distribution_comparison.png`.
+A statistical comparison of each feature between Normal and Attack classes (mean, std, median) is saved to `artifacts/primary/metrics/feature_stats_by_class.csv`. Visual distribution comparisons for the top 8 features are saved to `artifacts/primary/plots/feature_distribution_comparison.png`.
 
 Key patterns observed:
 - **Attack traffic** generally has **larger byte volumes** (`total_bytes`, `flow_bytes_toserver`) — consistent with exploit payloads and DoS flood traffic.
@@ -495,7 +469,7 @@ Key patterns observed:
 
 ## 12. Output Artefacts
 
-### Model files (`results/models/`)
+### Model files (`artifacts/primary/models/`)
 
 | File | Contents |
 |---|---|
@@ -504,7 +478,7 @@ Key patterns observed:
 | `lr_calibrated.joblib` | `CalibratedClassifierCV` wrapper around `lr_pipeline` |
 | `rf_calibrated.joblib` | `CalibratedClassifierCV` wrapper around `rf` |
 
-### Metrics files (`results/metrics/`)
+### Metrics files (`artifacts/primary/metrics/`)
 
 | File | Contents |
 |---|---|
@@ -518,7 +492,7 @@ Key patterns observed:
 | `rf_report_{val,test}.txt` | sklearn classification report for RF |
 | `hybrid_report_{val,test}.txt` | sklearn classification report for Hybrid |
 
-### Plot files (`results/plots/`)
+### Plot files (`artifacts/primary/plots/`)
 
 | File | Contents |
 |---|---|
@@ -529,7 +503,7 @@ Key patterns observed:
 | `feature_importance.png` | Horizontal bar chart of RF feature importances |
 | `feature_distribution_comparison.png` | 8-panel distribution comparison (Normal vs Attack) |
 
-### Predictions files (`results/predictions/`)
+### Predictions files (`artifacts/primary/predictions/`)
 
 Each row corresponds to one network flow event. Columns:
 
@@ -550,115 +524,80 @@ Each row corresponds to one network flow event. Columns:
 
 ---
 
-## 13. Interactive SOC Dashboard
+## 13. Interactive SOC Dashboards
 
-The dashboard (`dashboard.py`) is a **Plotly Dash** web application. It reads all results from the `results/` directory — no hard-coded metric values.
+The repository contains three interfaces with different roles: two Python Dash views for inspecting saved experiment outputs and a Next.js dashboard that groups research, experiment, and evaluation views in one responsive UI. These interfaces do not train models themselves.
 
-### Sections
+### Python Dash interfaces
 
-| Section | What it shows |
+- `apps/primary-dashboard/dashboard.py` reads the saved primary experiment outputs from `artifacts/primary/` and runs on port 8050.
+- `apps/secondary-dashboard/secondary_soc_dashboard.py` reads the saved secondary experiment outputs from `artifacts/secondary/` and runs on port 8051.
+- Run the matching experiment pipeline first when you need to regenerate its saved results.
+
+The primary Dash interface includes prediction summaries, triage and attack-category charts, model evaluation views, feature importance, and a filterable prediction explorer. The secondary interface presents its own experiment outputs. Results remain dataset-specific.
+
+### Next.js SOC research dashboard
+
+The consolidated frontend is in `apps/web-dashboard/`. It uses Next.js App Router, React, TypeScript, Tailwind CSS, Recharts, and Lucide icons. Shared navigation keeps all routes available:
+
+| Route | Purpose |
 |---|---|
-| **KPI Row** | Total events, normal vs attack counts, hybrid detected, missed attacks (FN), w1/w2 weights, decision threshold |
-| **Calibration Note** | Prominent disclaimer explaining what calibrated scores do and do not mean |
-| **Triage Pie Chart** | Proportion of test events in each triage level |
-| **Attack Categories** | Horizontal bar chart of multiclass label distribution |
-| **Protocol Distribution** | TCP / UDP / ICMP breakdown across all events |
-| **Top Destination Ports** | Top 15 target ports by event count |
-| **Hourly Traffic Pattern** | Stacked bar chart: normal vs attack count by hour of day |
-| **Hybrid Score Distribution** | Histogram of calibrated hybrid scores, separated by true label, with decision and triage threshold lines |
-| **LR vs RF Probability Scatter** | Per-event scatter plot coloured by hybrid prediction |
-| **Model Performance Table** | Accuracy / Precision / Recall / F1 / ROC-AUC comparison table (test set) |
-| **Confusion Matrices** | Embedded PNG images for LR, RF, and Hybrid (test set) |
-| **ROC Curve Comparison** | Embedded ROC curve overlay image (test set) |
-| **Feature Importance** | Interactive Plotly bar chart of RF feature importances |
-| **Feature Distributions** | Embedded distribution comparison image |
-| **Hybrid Configuration** | Formula, decision threshold, triage band boundaries, calibration method |
-| **Prediction Explorer** | Filterable, sortable data table of all 3,607 test predictions with triage-level colour coding |
+| `/home` | Concise project introduction and experiment workflow |
+| `/overview` | Summary of the project and saved experiment outputs |
+| `/primary-model` | Suricata testbed model results and CSV prediction interface |
+| `/secondary-model` | CIC-IDS-2017 model results and CSV prediction interface |
+| `/ensemble` | Cross-experiment inference using the separate 34-feature ensemble schema |
+| `/comparison` | Side-by-side saved results from the independent experiments |
+| `/analysis` | Feature statistics and analysis |
+| `/performance` | Saved metrics and model comparisons |
+| `/results` | Prediction results table |
+| `/configuration` | Dataset, model, and experiment configuration details |
 
-### Dashboard interactivity
+The web dashboard supports dark and light themes. On a first visit it follows the operating system preference; the navigation toggle lets a user switch themes, and the choice is saved in browser local storage under `soc-dashboard-theme`. A small pre-render initialization script applies the theme before the page is painted. Shared CSS custom properties theme page surfaces, typography, status colors, charts, tables, tooltips, and focus indicators. The toggle is keyboard accessible and announces the mode it will switch to.
 
-- Filter predictions by **Triage Level** (All / Low Suspicion / Review / High Suspicion)
-- Filter predictions by **True Label** (All / Normal / Attack)
-- Sort any column in the prediction table
-- All Plotly charts support zoom, pan, hover tooltips, and PNG export
+### Data modes and API boundary
 
----
+There is no backend/API service in this repository. The frontend API adapter in `apps/web-dashboard/src/services/apiService.ts` uses demonstration responses when `NEXT_PUBLIC_API_URL` is unset. When configured, the adapter expects an external service implementing its documented routes, including `/health`, `/api/overview`, model prediction and configuration routes, `/api/comparison`, and `/api/ensemble/predict`. Setting the URL does not start a server. Do not present demonstration output as live telemetry or as a newly executed model result.
+
+Saved metrics on the dashboards are experiment results stored under `artifacts/`; uploaded-file responses in the web frontend may be demonstration data in mock mode. Model scores are estimates and should not be treated as guaranteed confidence percentages or operational decisions.
 
 ## 14. Module Reference
 
-### `src/config.py`
+### Primary experiment
 
-Central configuration file. Every constant — paths, feature lists, model parameters, thresholds — is defined here. All other modules import from `config.py` rather than defining their own constants.
+The primary Suricata testbed pipeline is implemented in `experiments/primary/`:
 
-**Key constants:**
+- `src/config.py` defines the dataset paths, feature columns, seed, model parameters, and output locations.
+- `src/data_loader.py` validates inputs and creates the experiment's train, calibration, validation, and test data.
+- `src/models.py` builds, fits, calibrates, and persists Logistic Regression and Random Forest models.
+- `src/hybrid.py` tunes the weighted score and thresholds and assigns triage labels.
+- `src/evaluation.py` computes metrics and saves reports and plots.
+- `src/feature_analysis.py` calculates feature importance and class-level feature summaries.
+- `src/predictions_writer.py` writes prediction tables.
+- `train_and_evaluate.py` orchestrates the primary pipeline and writes to `artifacts/primary/`.
 
-| Constant | Value | Purpose |
-|---|---|---|
-| `RANDOM_SEED` | 42 | Fixed seed for all stochastic operations |
-| `VAL_FRAC` | 0.15 | Fraction of training rows reserved for validation |
-| `CALIBRATION_METHOD` | `'isotonic'` | Calibration algorithm |
-| `LR_WEIGHT_CANDIDATES` | [0.1 … 0.9] | Grid for hybrid weight search |
-| `FEATURE_COLS` | 22 items | Ordered list of predictive features |
-| `TARGET_BINARY` | `'label_binary'` | Target column name |
+### Secondary experiment
 
-### `src/data_loader.py`
+`experiments/secondary/run_secondary_model.py` runs the independent CIC-IDS-2017 experiment. It uses the secondary input schema and writes its own models, metrics, predictions, and plots under `artifacts/secondary/`. Its results are not mixed into the primary training pipeline.
 
-Loads both xlsx files, runs integrity checks (shape, dtypes, missing values, infinite values, target distribution, timestamp range), performs the time-based split, and returns feature matrices and metadata.
+### Cross-experiment research modules
 
-**Public API:** `load_and_split() → dict`
+- `research/ensemble/ensemble_predict.py` performs inference on the separate combined 34-feature schema using the already trained primary and secondary model artifacts. It does not train a cross-dataset model.
+- `research/comparison/comparison_report.py` creates comparison outputs from the experiments' saved results.
+- `research/shared/experiment_support.py` contains shared research support code.
+- `tools/audit_experiments.py` and the tests under `tests/` support auditing and validation.
 
-### `src/models.py`
+### Dashboard entry points
 
-Builds, trains, calibrates, and persists both base models. Provides a unified `get_probabilities()` function that returns both raw and calibrated probabilities.
+- `apps/primary-dashboard/dashboard.py`: primary experiment's Python Dash interface.
+- `apps/secondary-dashboard/secondary_soc_dashboard.py`: secondary experiment's Python Dash interface.
+- `apps/web-dashboard/src/app/`: Next.js routes; shared layout and navigation are in `src/components/layout/`, reusable chart, ML, and UI components are under `src/components/`, theme tokens live in `src/app/globals.css`, and frontend API adaptation is in `src/services/apiService.ts`.
 
-**Public API:**
-- `train_models(X_train, y_train, X_val, y_val) → dict`
-- `get_probabilities(models, X, split_name) → dict`
-- `save_models(models)`
-- `load_models() → dict`
-
-### `src/hybrid.py`
-
-Implements the hybrid framework: weight optimisation, threshold selection, triage band computation, hybrid score calculation, and triage label assignment. All tuning happens on the validation set.
-
-**Public API:**
-- `tune_hybrid(lr_prob_val, rf_prob_val, y_val, criterion) → dict`
-- `compute_hybrid_score(lr_prob, rf_prob, w1, w2) → ndarray`
-- `apply_triage(hybrid_scores, low_thr, high_thr) → list`
-
-### `src/evaluation.py`
-
-Computes Accuracy, Precision, Recall, F1, ROC-AUC for each model. Saves confusion matrix PNG, ROC curve overlay PNG, classification report TXT, and summary CSV.
-
-**Public API:** `evaluate_all(y_true, lr_pred, lr_prob, rf_pred, rf_prob, hybrid_pred, hybrid_score, split_name) → DataFrame`
-
-### `src/feature_analysis.py`
-
-Extracts and visualises Random Forest feature importances. Compares per-class feature distributions between Normal and Attack traffic.
-
-**Public API:**
-- `analyse_feature_importance(rf_model, feature_names) → DataFrame`
-- `analyse_traffic_patterns(X_train, y_train, top_features) → DataFrame`
-
-### `src/predictions_writer.py`
-
-Assembles a predictions DataFrame from all model outputs and metadata, assigns triage labels, and saves to CSV.
-
-**Public API:** `save_predictions(...) → str` (returns file path)
-
-### `train_and_evaluate.py`
-
-Main orchestration script. Calls all modules in the correct sequence. Writes `experiment_metadata.json` at the end. **This is the only script you need to run** to regenerate all results.
-
-### `dashboard.py`
-
-Self-contained Plotly Dash application. Reads all CSVs, JSONs, and PNGs from `results/`. No imports from `src/`. Starts a local web server on port 8050.
-
----
+The web dashboard's expected API is an integration contract only; a separate HTTP API implementation is not included in this repository.
 
 ## 15. Reproducibility Record
 
-The following parameters uniquely define this experiment. All values are also stored in `results/metrics/experiment_metadata.json`.
+The following parameters uniquely define this experiment. All values are also stored in `artifacts/primary/metrics/experiment_metadata.json`.
 
 | Parameter | Value |
 |---|---|
@@ -690,65 +629,77 @@ The following parameters uniquely define this experiment. All values are also st
 
 ## 16. How to Run
 
-### Prerequisites
-
-Python 3.9+ with the following packages (see `requirements.txt`):
-
-```
-pandas==2.3.3
-numpy==2.4.1
-scikit-learn==1.8.0
-joblib==1.5.3
-matplotlib==3.10.8
-seaborn==0.13.2
-plotly==6.5.2
-dash==4.4.1
-openpyxl==3.1.5
-scipy==1.17.0
-imbalanced-learn==0.14.2
-```
-
-### Installation
+Run Python commands from the repository root. Install the dependencies listed in `requirements.txt`:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Step 1 — Train models and generate all results
+### Run the independent experiment pipelines
+
+Primary Suricata testbed experiment:
 
 ```bash
-python train_and_evaluate.py
+python experiments/primary/train_and_evaluate.py
 ```
 
-This will:
-1. Load and validate both dataset files
-2. Print a full inspection report (shape, dtypes, missing values, class distribution)
-3. Perform the time-based split
-4. Train LR and RF on the training set only
-5. Calibrate probabilities on the validation set
-6. Optimise hybrid weights and thresholds on the validation set
-7. Evaluate all models on validation (diagnostic) and test (final) sets
-8. Analyse feature importances and traffic patterns
-9. Save predictions CSVs, model joblib files, metrics CSVs, and plot PNGs
-10. Write `results/metrics/experiment_metadata.json`
-
-Expected output in `~10 seconds`.
-
-### Step 2 — Launch the SOC dashboard
+Secondary CIC-IDS-2017 experiment:
 
 ```bash
-python dashboard.py
+python experiments/secondary/run_secondary_model.py
 ```
 
-Open your browser at: **http://127.0.0.1:8050**
+Each pipeline reads its own inputs from `data/raw/` and writes its outputs under the matching `artifacts/primary/` or `artifacts/secondary/` directory. Running one experiment does not train or update the other.
 
-The dashboard reads results from `results/`. You must run `train_and_evaluate.py` at least once before launching the dashboard.
+### Run a saved-results dashboard
 
-### Re-running
+Primary Python Dash interface (port 8050):
 
-Running `train_and_evaluate.py` again will overwrite all results with freshly computed values. Because all randomness is seeded, results are identical across runs.
+```bash
+python apps/primary-dashboard/dashboard.py
+```
 
----
+Secondary Python Dash interface (port 8051):
+
+```bash
+python apps/secondary-dashboard/secondary_soc_dashboard.py
+```
+
+These interfaces read saved experiment artifacts. Run the associated pipeline first if the results need to be refreshed.
+
+### Run the Next.js web dashboard
+
+```bash
+cd apps/web-dashboard
+npm install
+npm run dev
+```
+
+Open `http://localhost:3000/home`. The app's scripts also provide `npm run lint` and `npm run build`; run `npx tsc --noEmit` for a standalone TypeScript check. By default the frontend uses demonstration responses for its API-backed upload flows. It does not start a backend service. Configure `NEXT_PUBLIC_API_URL` only when an external compatible API is available.
+
+### Comparison, ensemble inference, and tests
+
+From the project root, generate the saved-results comparison with:
+
+```bash
+python research/comparison/comparison_report.py
+```
+
+The ensemble command can print its required schema, generate a template, or infer on a completed CSV. It requires artifacts from both independent experiments:
+
+```bash
+python research/ensemble/ensemble_predict.py schema
+python research/ensemble/ensemble_predict.py template --output data/samples/ensemble_template.generated.csv
+python research/ensemble/ensemble_predict.py predict your_file.csv --output predictions.csv
+```
+
+Run repository tests with:
+
+```bash
+python -m pytest tests/ -v
+```
+
+See `Quick_start.txt` for the concise command reference. Raw data and generated model/result artifacts are kept in separate top-level folders; follow the repository's tracking policy before adding large files.
 
 ## 17. Academic Integrity Guarantees
 
@@ -758,9 +709,9 @@ This implementation was designed with the following explicit commitments:
 |---|---|
 | **No label leakage** | `alert_signature`, `alert_category`, `alert_severity`, `label_multiclass`, IPs, and `flow_id` are in `EXCLUDE_COLS` and never appear in `FEATURE_COLS` |
 | **No test set contamination** | Test data is never passed to `train_models()`, `tune_hybrid()`, or `select_threshold()` |
-| **No invented results** | All metrics are computed by sklearn from actual predictions; no values are hard-coded anywhere |
-| **No dataset modification** | Original xlsx files are opened read-only; the `results/` directory is fully separate |
-| **No secondary dataset merging** | `Secondary_Dataset.csv` is never loaded or referenced in any source file |
+| **No invented results** | Evaluation metrics are computed from actual predictions; dashboard reference values are traceable to saved experiment outputs and are identified as saved results |
+| **No dataset modification** | Original xlsx files are opened read-only; the `artifacts/primary/` directory is fully separate |
+| **Independent experiment data** | The primary and secondary pipelines use separate input files, feature schemas, model artifacts, and result directories; the cross-experiment inference component is a separate task |
 | **Temporal integrity** | `assert df_tr.timestamp.max() <= df_val.timestamp.min()` is enforced programmatically |
 | **Calibration honesty** | Every reference to calibrated scores includes the disclaimer that they are estimates, not guaranteed confidence percentages |
 | **Full reproducibility** | Fixed seed=42 on all stochastic operations; all parameters recorded in `experiment_metadata.json` |
@@ -768,4 +719,4 @@ This implementation was designed with the following explicit commitments:
 ---
 
 *Documentation generated for: Confidence-Based Hybrid ML Framework for Security Operations Center Alert Triage*  
-*Experiment date: September 9, 2026*
+*Documentation reviewed: October 7, 2026*

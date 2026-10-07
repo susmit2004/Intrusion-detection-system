@@ -1,7 +1,7 @@
 """Read-only audit of supplied datasets and historical saved predictions.
 
 Run from the repository root: python -X utf8 tools/audit_experiments.py
-Writes audit artifacts only under results/verified/audit/.
+Writes audit artifacts only under artifacts/verified/audit/.
 """
 import json
 import sys
@@ -12,15 +12,17 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from experiment_support import feature_groups, metric_record, sha256_file
+from research.shared.experiment_support import feature_groups, metric_record, sha256_file
+sys.path.insert(0, str(ROOT / "experiments" / "primary"))
 from src.config import FEATURE_COLS as PRIMARY_FEATURES
 
-SECONDARY = ROOT / "ML Models/ML Models/Secondary Model"
-OUT = ROOT / "results/verified/audit"
+PRIMARY_ARTIFACTS = ROOT / "artifacts/primary"
+SECONDARY = ROOT / "artifacts/secondary"
+OUT = ROOT / "artifacts/verified/audit"
 DATA_FILES = {
-    "primary": [ROOT / "Raw Data/Primary data" / name for name in
+    "primary": [ROOT / "data/raw/primary" / name for name in
                 ["Primary_training_data.xlsx", "Primary_testing_data.xlsx"]],
-    "secondary": [ROOT / "Raw Data/Secondary data" / name for name in
+    "secondary": [ROOT / "data/raw/secondary" / name for name in
                   ["Secondary_Train_70.csv", "Secondary_Test_30.csv"]],
 }
 
@@ -54,7 +56,7 @@ def source_audit(name, paths):
 
 
 def replay_saved_metrics(name):
-    base = ROOT / "results" if name == "primary" else SECONDARY
+    base = PRIMARY_ARTIFACTS if name == "primary" else SECONDARY
     prefix = "" if name == "primary" else "secondary_"
     predictions = pd.read_csv(base / "predictions" / f"{prefix}predictions_test.csv")
     summary = pd.read_csv(base / "metrics" / f"{prefix}evaluation_summary_test.csv")
@@ -84,14 +86,32 @@ def replay_saved_metrics(name):
 
 def baseline_manifest():
     candidates = set(p for paths in DATA_FILES.values() for p in paths)
-    candidates.update(p for p in (ROOT / "results").rglob("*")
-                      if p.is_file() and "verified" not in p.relative_to(ROOT / "results").parts)
+    candidates.update(p for p in PRIMARY_ARTIFACTS.rglob("*") if p.is_file())
     candidates.update(p for p in SECONDARY.rglob("*")
                       if p.is_file() and p.suffix not in [".py", ".pyc"])
-    candidates.update((ROOT / "ML Models/ML Models").glob("comparison_*.csv"))
-    candidates.update((ROOT / "ML Models/ML Models").glob("comparison_*.txt"))
-    candidates.update((ROOT / "ML Models/ML Models/comparison_plots").glob("*.png"))
+    comparison = ROOT / "artifacts/comparison"
+    candidates.update(p for p in comparison.rglob("*") if p.is_file())
     return {p.relative_to(ROOT).as_posix(): sha256_file(p) for p in sorted(candidates)}
+
+
+def normalize_legacy_manifest_paths(manifest):
+    """Translate paths recorded before the role-based directory migration."""
+    replacements = (
+        ("Raw Data/Primary data/", "data/raw/primary/"),
+        ("Raw Data/Secondary data/", "data/raw/secondary/"),
+        ("ML Models/ML Models/Secondary Model/", "artifacts/secondary/"),
+        ("ML Models/ML Models/comparison_plots/", "artifacts/comparison/plots/"),
+        ("ML Models/ML Models/", "artifacts/comparison/"),
+        ("results/", "artifacts/primary/"),
+    )
+    normalized = {}
+    for path, digest in manifest.items():
+        for old, new in replacements:
+            if path.startswith(old):
+                path = new + path[len(old):]
+                break
+        normalized[path] = digest
+    return normalized
 
 
 def main():
@@ -99,7 +119,11 @@ def main():
     manifest_path = OUT / "baseline_manifest.json"
     current = baseline_manifest()
     if manifest_path.exists():
-        original = json.loads(manifest_path.read_text(encoding="utf-8"))
+        stored_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        original = normalize_legacy_manifest_paths(stored_manifest)
+        if original != stored_manifest:
+            # Preserve every recorded digest while updating only the moved paths.
+            manifest_path.write_text(json.dumps(original, indent=2), encoding="utf-8")
         changed = [p for p, digest in original.items() if current.get(p) != digest]
         if changed:
             raise RuntimeError(f"Original datasets/artifacts changed: {changed}")

@@ -1,0 +1,55 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "ML components, chart components, page-level changes: ProbabilityHistogram label fix, Home page enrichment, per-route subtitle updates, ConfusionMatrix polish, FeatureImportance accessibility improvement, PredictionCard improvements, and token cleanup across all page files. Depends on FEAT-001 (tokens) and FEAT-002 (UI primitives). All pages already wire up correctly — only targeted edits.",
+  "status": "pending",
+  "steps": [
+    "1. src/components/charts/ProbabilityHistogram.tsx — LABEL FIX (highest priority):\n   The histogram XAxis currently uses bins like '0.0–0.1'. The ReferenceLine x prop tries to match the bin label of the threshold bucket, which is fragile and currently does not show correctly. Fix:\n   a) Add a proper axis label to XAxis: <XAxis ... label={{ value: 'Hybrid Score (calibrated)', fill: CHART_COLORS.text, fontSize: 10, position: 'insideBottom', offset: -5 }} />. Increase BarChart bottom margin from 0 to 20 to accommodate label.\n   b) The ReferenceLine: keep as-is but add a second label prop attribute: position:'insideTopRight' so it never overlaps the bars.\n   c) Add a YAxis label: <YAxis ... label={{ value: 'Row Count', fill: CHART_COLORS.text, fontSize: 10, angle: -90, position: 'insideLeft', offset: 10 }} />.\n   d) Increase legend font size in wrapperStyle from 12 to 11 (makes room).\n   e) No changes to data generation logic or threshold prop.",
+
+    "2. src/components/ml/ConfusionMatrix.tsx — VISUAL POLISH:\n   - Header text: change text-xs font-semibold text-slate-400 to text-xs font-bold uppercase tracking-widest, color via style={{color:'var(--text-secondary)'}}.\n   - FP cell: currently has very faint text (text-red-400/60). Increase to text-red-400/80 so it is more readable.\n   - FN cell: similarly change text-amber-400/60 to text-amber-400/80.\n   - Summary bar bottom: replace hardcoded border-[#1e3a5f] with border-[var(--border)].\n   - Overall container: replace border-[#1e3a5f] bg-[#0a1628] with border-[var(--border)] bg-[var(--bg-card)].",
+
+    "3. src/components/ml/FeatureImportance.tsx — ACCESSIBILITY + POLISH:\n   - Container: replace border-[#1e3a5f] bg-[#0a1628] with var(--border)/var(--bg-card) tokens.\n   - Feature name width: change w-48 to w-44 (slightly narrower) to give more room to the bar on small screens.\n   - Bar track: replace bg-[#1e3a5f] with bg-[var(--border)] so it uses the token.\n   - Add title attribute to each feature name span for accessibility: title={item.feature}.\n   - Footer note: replace border-[#1e3a5f] with border-[var(--border)].",
+
+    "4. src/components/ml/PredictionCard.tsx — TOKEN CLEANUP:\n   - Replace all hardcoded border-[#1e3a5f] with border-[var(--border)].\n   - Replace bg-[#0a1628] with bg-[var(--bg-card)].\n   - Attack rate bar track: replace bg-[#1e3a5f] with bg-[var(--border)].\n   - All other logic (KPI grid, hybrid config, detection rate) unchanged.",
+
+    "5. src/components/ml/ModelCard.tsx — TOKEN CLEANUP:\n   - Replace bg-[#0a1628] with bg-[var(--bg-card)], border-[#1e3a5f] with border-[var(--border)].\n   - All metric/KPI logic unchanged.",
+
+    "6. src/components/ml/FileUpload.tsx — TOKEN CLEANUP:\n   - Replace bg-[#0a1628] / border-[#1e3a5f] in the idle state fallback style objects with var(--bg-card)/var(--border).\n   - No logic changes.",
+
+    "7. src/app/home/page.tsx — CONTENT ENRICHMENT:\n   This page has no DashboardLayout and no Navbar — it is the standalone landing page. Specific changes only:\n   a) Header section: the existing h1 is correct. Change the badge from 'MCA Research Project' to 'SOC Alert Triage · Hybrid ML Research'.\n   b) Add a new fourth section after 'Triage Levels' and before 'Explore the Dashboard' titled 'Key Results at a Glance'. This section shows 4 metric highlight chips in a 2×2 grid:\n      Row 1: 'Secondary Hybrid F1 — 99.65%' (violet), 'Primary Hybrid Accuracy — 97.59%' (blue)\n      Row 2: 'Fewest Missed Attacks — 20 FN (Secondary)' (emerald), 'Best AUC — 99.95% (Secondary RF)' (amber)\n      Each chip is a small rounded card using existing WorkflowStep-like styling (bg-panel, border-color, text-primary).\n   c) Technology stack section: add 'FastAPI' and 'Isotonic Calibration' to the tech badges list.\n   d) The NavButton component's primary style currently uses --accent (cyan). Change primary button to use a blue-to-violet gradient matching the brand: background:'linear-gradient(135deg,#3B82F6,#8B5CF6)', color:'#fff', borderColor:'transparent'.\n   e) All existing sections (Approach, Experiments, Triage Levels, Navigation) remain structurally unchanged.",
+
+    "8. src/app/overview/page.tsx — SUBTITLE + TOKEN CLEANUP:\n   - DashboardLayout subtitle: change 'Unified view of both intrusion-detection models' to 'Real-time SOC metrics across both experiments'.\n   - PageHeader subtitle: change 'CIC-IDS-2017 · Suricata Testbed · Confidence-Based Hybrid ML Framework' to 'Confidence-Based Hybrid ML Framework · Dual-dataset evaluation results'.\n   - Key Findings section: replace hardcoded bg-[#0a1628] / bg-[#0f1f3d] / border-[#1e3a5f] with var(--bg-card) / var(--surface-raised) / var(--border) tokens.\n   - Model performance cards (Primary/Secondary): replace hardcoded bg-[#0a1628] border-blue-500/20 with bg-[var(--bg-card)] (border-blue-500/20 is intentional branding, keep).",
+
+    "9. src/app/primary-model/page.tsx — SUBTITLE + TOKEN CLEANUP:\n   - DashboardLayout subtitle: change 'Suricata IDS Testbed · 22-feature network flow analysis' to 'Suricata IDS Testbed · 22 engineered network-flow features'.\n   - PageHeader subtitle: change 'Suricata-based intrusion detection on testbed network traffic' to 'LR + RF hybrid on 22 Suricata features · w_LR=0.30 · w_RF=0.70 · threshold=0.5025'.\n   - Upload section container: replace border-[#1e3a5f] bg-[#0a1628] with var(--border)/var(--bg-card).\n   - Config note code block: replace bg-[#0f1f3d] with bg-[var(--surface-raised)].\n   - All data references (PRIMARY_CONFIG, PRIMARY_FEATURE_COLS, etc.) unchanged.",
+
+    "10. src/app/secondary-model/page.tsx — SUBTITLE + TOKEN CLEANUP:\n    - DashboardLayout subtitle: change 'CIC-IDS-2017 · 12-feature network flow analysis' to 'CIC-IDS-2017 · 12 raw network-flow features · RF-dominant hybrid'.\n    - PageHeader subtitle: change 'CIC-IDS-2017 network flow intrusion detection (Canadian Institute for Cybersecurity)' to 'RF-dominant hybrid (w_RF=1.0) · 30,000 test rows · 99.86% accuracy'.\n    - Upload section: replace border-[#1e3a5f] bg-[#0a1628] tokens.\n    - Config code block: replace bg-[#0f1f3d] with bg-[var(--surface-raised)].",
+
+    "11. src/app/ensemble/page.tsx — SUBTITLE + TOKEN CLEANUP:\n    - DashboardLayout subtitle: change 'Primary + Secondary models combined via weighted scoring' to 'Cross-dataset ensemble · 34-feature unified schema · configurable weights'.\n    - PageHeader subtitle: keep existing text (it is already detailed).\n    - 'How it works' container: replace hardcoded colors with var() tokens.\n    - Schema table rows: replace bg-[#0a1628]/bg-[#0c1a30] with var(--bg-card)/var(--bg-card-hover).",
+
+    "12. src/app/comparison/page.tsx — SUBTITLE + TOKEN CLEANUP:\n    - DashboardLayout subtitle: change 'Primary vs Secondary — cross-dataset analysis' to 'Primary (Suricata) vs Secondary (CIC-IDS-2017) — independent test sets'.\n    - PageHeader subtitle: change 'Side-by-side evaluation of both models on their respective unseen test sets' to 'Fair comparison on independent held-out test sets — no cross-contamination'.\n    - Key differences table: replace hardcoded row bg colors with var(--bg-card)/var(--bg-card-hover) tokens.",
+
+    "13. src/app/analysis/page.tsx — TOKEN CLEANUP ONLY (NO id field changes):\n    - Replace border-[#1e3a5f] / bg-[#0a1628] / bg-[#0f1f3d] in the attack signatures grid with var() tokens.\n    - IMPORTANT: The STATS_COLUMNS definition uses two columns with key='attack_median'; the second one has id='attack_normal_ratio'. This id field MUST NOT be removed or renamed — it is the React key override for the duplicate key. Do not touch STATS_COLUMNS at all.\n    - DashboardLayout subtitle: change 'What the model learned about attack vs normal traffic' to 'Feature discrimination power across CIC-IDS-2017 network-flow features'.",
+
+    "14. src/app/performance/page.tsx — SUBTITLE + TOKEN CLEANUP:\n    - DashboardLayout subtitle: change 'Full evaluation metrics across all models and datasets' to 'Comprehensive test-set evaluation — all 6 models × 2 datasets'.\n    - PageHeader subtitle: change 'Comprehensive evaluation on unseen test sets — no data leakage' to 'All metrics on held-out test data · Primary (3,607 rows) · Secondary (30,000 rows)'.\n    - FN analysis section: replace hardcoded bg-[#0f1f3d] border-[#1e3a5f] with var() tokens.",
+
+    "15. src/app/results/page.tsx — SUBTITLE + TOKEN CLEANUP:\n    - DashboardLayout subtitle: change 'Sample prediction results from secondary model test set' to 'Row-level hybrid scores, risk classification, and triage levels'.\n    - PageHeader subtitle: change 'Detailed row-level results showing LR, RF, Hybrid Score, and risk classification' to 'LR + RF calibrated probabilities → Hybrid Score → Attack/Normal decision → SOC triage level'.\n    - Quick stats mini-cards: replace border-[#1e3a5f] bg-[#0a1628] with var() tokens.\n    - Score interpretation guide cards: replace bg-[#0f1f3d] with bg-[var(--surface-raised)].",
+
+    "16. src/app/configuration/page.tsx — SUBTITLE + TOKEN CLEANUP:\n    - DashboardLayout subtitle: change 'Experiment parameters, model config, and system information' to 'All experiment parameters confirmed from training artifacts — read-only'.\n    - Section inner div: the Section component uses hardcoded border-[#1e3a5f] bg-[#0a1628] bg-[#0f1f3d] — replace with var() tokens inside the Section component definition within this file.\n    - KV row border: replace border-[#1e3a5f]/40 with border-[var(--border)]/40.\n    - Feature tag pills: replace bg-blue-500/10 border-blue-500/15 (already token-like) — leave as-is (intentional branding)."
+  ],
+  "acceptance_criteria": [
+    "npm run build exits 0 with zero TypeScript or ESLint errors",
+    "ProbabilityHistogram has an XAxis label 'Hybrid Score (calibrated)'",
+    "ProbabilityHistogram has a YAxis label 'Row Count'",
+    "Home page contains a 'Key Results at a Glance' section",
+    "Home page NavButton primary style uses gradient background",
+    "analysis/page.tsx STATS_COLUMNS second attack_median column still has id='attack_normal_ratio'",
+    "No hardcoded '#0a1628' or '#0f1f3d' remain outside of chart tooltip contentStyle objects (chart tooltips may keep their hardcoded values for Recharts compatibility)",
+    "All DashboardLayout subtitle props updated per steps 8-16",
+    "All PageHeader subtitle props updated per steps 8-16"
+  ],
+  "verification": [
+    "cd d:\\Intrusion-detection-system\\ids-dashboard && npm run build"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

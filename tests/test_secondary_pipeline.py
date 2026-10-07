@@ -1,4 +1,5 @@
 import importlib.util
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -10,11 +11,12 @@ from sklearn.datasets import make_classification
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 
-from experiment_support import feature_groups, grouped_development_split, select_f1_threshold
-
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from research.shared.experiment_support import feature_groups, grouped_development_split, select_f1_threshold
+
 SPEC = importlib.util.spec_from_file_location(
-    "secondary_pipeline", ROOT / "ML Models/ML Models/Secondary Model/run_secondary_model.py"
+    "secondary_pipeline", ROOT / "experiments/secondary/run_secondary_model.py"
 )
 secondary = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(secondary)

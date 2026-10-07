@@ -1,0 +1,21 @@
+{
+  "verdict": "APPROVED",
+  "findings": [
+    {
+      "id": "bg-base-token-mismatch",
+      "severity": "minor",
+      "summary": "`--bg-base` token value mismatch — globals.css defines `--bg-base: #020b18` but the design spec requires `#0B1120`. The entire app background is darker than intended. Update to `#0B1120`."
+    },
+    {
+      "id": "statcard-chartcard-wrong-bg-token",
+      "severity": "minor",
+      "summary": "StatCard and ChartCard bind to `var(--bg-card)` (`#0a1628`) instead of the new `var(--bg-panel)` (`#151F32`). The `--bg-panel` token exists but is only consumed by `/home`. Replace `var(--bg-card)` with `var(--bg-panel)` in StatCard.tsx and ChartCard.tsx, or alias the tokens."
+    },
+    {
+      "id": "literal-hex-in-home-page",
+      "severity": "minor",
+      "summary": "Two hard-coded hex literals remain in `/home/page.tsx`: primary NavButton uses `color: \"#0B1120\"` and ExperimentCard receives `accentColor=\"#8b5cf6\"`. Replace with `var(--bg-base)` and the pre-existing `--accent-violet` token respectively."
+    }
+  ],
+  "reviewDoc": "d:\\Intrusion-detection-system\\ids-dashboard\\.agents\\tasks\\review-doc.md"
+}

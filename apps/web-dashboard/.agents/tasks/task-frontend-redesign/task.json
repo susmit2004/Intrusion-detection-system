@@ -1,0 +1,7 @@
+{
+  "task_id": "task-frontend-redesign",
+  "task_description": "Full frontend redesign of the IDS Dashboard: updated design tokens (CSS vars + CHART_COLORS), refreshed layout components (Sidebar, Navbar), polished UI primitives (StatCard, ChartCard, PageHeader, DataTable, RiskBadge), improved ML components (ConfusionMatrix, FeatureImportance, PredictionCard), ProbabilityHistogram label fix, and enriched Home page. All data/API/type files are frozen.",
+  "status": "pending",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003"],
+  "blocked_reason": null
+}

@@ -1,0 +1,165 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  /* ── Base backgrounds ───────────────────────────────── */
+  --bg-base:       #101214;
+  --bg-card:       #191D22;
+  --bg-card-hover: #222831;
+  --bg-panel:      #191D22;
+  --bg-elevated:   #222831;
+
+  /* ── Borders ────────────────────────────────────────── */
+  --border:        #39414C;
+  --border-subtle: #2B323A;
+  --border-color:  #39414C;
+
+  /* ── Text ───────────────────────────────────────────── */
+  --text-primary:  #F2F4F5;
+  --text-secondary:#ABB4BF;
+  --text-muted:    #5E6E7F;
+
+  /* ── Primary accent: lime ───────────────────────────── */
+  --accent:        #B9E769;
+
+  /* ── Semantic surface aliases ───────────────────────── */
+  --surface-raised:#222831;
+  --surface-inset: #0D1014;
+  --bg-card-alt:   #1D2229;
+  --bg-card-alt-2: #15191F;
+  --border-strong: #4A545F;
+
+  /* ── Status / risk colours ──────────────────────────── */
+  --risk-high:     #FF8585;
+  --risk-moderate: #F5C66A;
+  --risk-low:      #62D6B5;
+  --color-attack:  #FF8585;
+  --color-review:  #F5C66A;
+  --color-normal:  #62D6B5;
+  --accent-strong: #D4F29A;
+  --model-lr:      #8DBFFF;
+  --model-secondary-strong: #A8E5D1;
+  --chart-orange:  #F5A623;
+  --color-normal-soft: #A0EDD8;
+  --risk-high-soft: #FFB3B3;
+  --risk-moderate-soft: #FFD9A0;
+  --chart-grid:    #39414C;
+  --chart-grid-light: #2B323A;
+  --chart-text:    #ABB4BF;
+  --tooltip-bg:    #222831;
+  --globe-center:  #1b2a25;
+  --globe-mid:     #101916;
+  --globe-teal:    #6fd9bd;
+  --globe-outline: #93d889;
+
+  /* ── Transition token ───────────────────────────────── */
+  --transition-base: 150ms ease;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg-base:       #F3F7F5;
+  --bg-card:       #FFFFFF;
+  --bg-card-hover: #EDF3F0;
+  --bg-panel:      #FFFFFF;
+  --bg-elevated:   #EAF0ED;
+  --border:        #CAD7D0;
+  --border-subtle: #DCE6E0;
+  --border-color:  #CAD7D0;
+  --border-strong: #AABCB1;
+  --text-primary:  #14231B;
+  --text-secondary:#40574A;
+  --text-muted:    #536B5D;
+  --accent:        #426B16;
+  --accent-strong: #355B0D;
+  --surface-raised:#EAF0ED;
+  --surface-inset: #E7EFEB;
+  --bg-card-alt:   #F5F8F6;
+  --bg-card-alt-2: #EEF4F0;
+  --risk-high:     #B42318;
+  --risk-moderate: #8A4B08;
+  --risk-low:      #087E68;
+  --color-attack:  #B42318;
+  --color-review:  #8A4B08;
+  --color-normal:  #087E68;
+  --model-lr:      #4263A6;
+  --model-secondary-strong: #087E68;
+  --chart-orange:  #A94D00;
+  --color-normal-soft: #087E68;
+  --risk-high-soft: #8F1D16;
+  --risk-moderate-soft: #744006;
+  --chart-grid:    #D7E1DB;
+  --chart-grid-light: #E4EBE7;
+  --chart-text:    #4D6356;
+  --tooltip-bg:    #FFFFFF;
+  --globe-center:  #E5EFE6;
+  --globe-mid:     #F1F6F1;
+  --globe-teal:    #147F70;
+  --globe-outline: #628D4B;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+}
+
+body { min-height: 100vh; }
+
+::selection {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+
+/* Card border utility */
+.card-border {
+  border: 1px solid var(--border);
+  background-color: var(--bg-card);
+}
+
+/* Surface inset utility */
+.surface-inset {
+  background-color: var(--surface-inset);
+}
+
+/* Shimmer keyframe for skeleton loaders */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Recharts defaults follow the active theme. */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: var(--chart-grid);
+}
+.recharts-text { fill: var(--chart-text); }
+.recharts-legend-item-text { color: var(--chart-text) !important; }
+.recharts-tooltip-wrapper { outline: none; }
+
+@media (prefers-reduced-motion: no-preference) {
+  html[data-theme-transition] body,
+  html[data-theme-transition] body * {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-duration: 160ms;
+    transition-timing-function: ease-out;
+  }
+}
